@@ -1,8 +1,8 @@
-import { parseShortCode, hu } from "./mahjong.js"
+import { parseShortCode, hu, winningHand } from "./mahjong.js"
 
 const hands = [
     {
-        handTiles: parseShortCode("123m123m123m222s5m"),
+        handTiles: parseShortCode("234m234m234m222s5m"),
         meldCalls: [],
         pickedTile: "5m",
     },
@@ -21,10 +21,28 @@ const hands = [
         meldCalls: [],
         pickedTile: "8m",
     },
+    {
+        handTiles: parseShortCode("1123456789m123s"),
+        meldCalls: [],
+        pickedTile: "1m",
+    },
+    {
+        handTiles: parseShortCode("19m19p19s1234567z"),
+        meldCalls: [],
+        pickedTile: "7z",
+    },
 ]
+const player = "east"
+const wind = "east"
 for (const hand of hands) {
-    console.log(hand)
     for (const melds of hu(hand)) {
-        console.log(JSON.stringify(melds))
+        const state = {
+            hand,
+            melds,
+            wind,
+            player,
+        }
+        const { yakuman, yaku } = winningHand(state)
+        console.log(JSON.stringify({ state, yakuman, yaku }))
     }
 }

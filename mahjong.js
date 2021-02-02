@@ -231,21 +231,69 @@ export function tilesOfMelds(melds) {
  * @property {boolean} bonus
  */
 function tileProps(tile) {
-    // treat Aka Doras (0m, 0p, 0s) as 5-simples.
-    const num = tile[0] === "0" ? 5 : Number(tile[0])
-    if (!(1 <= num && num <= 9)) throw new RangeError()
-    const suit = tile[1]
+    const num = tileNum(tile)
+    const suit = tileSuit(tile)
     const simple = suit === "m" || suit === "p" || suit === "s"
     const bonus = suit === "h"
     return { num, suit, simple, bonus }
 }
 
 /**
+ * @param {Tile} tile 
+ */
+function replaceAkaDora(tile) {
+    if (tile === "0m") return "5m"
+    if (tile === "0p") return "5p"
+    if (tile === "0s") return "5s"
+    return tile
+}
+
+/**
+ * @param {Tile} tile 
+ */
+function tileNum(tile) {
+    // treat Aka Doras (0m, 0p, 0s) as 5-simples.
+    const num = tile[0] === "0" ? 5 : Number(tile[0])
+    if (!(1 <= num && num <= 9)) throw new RangeError()
+    return num
+}
+
+
+/**
+ * @param {Tile} tile 
+ */
+function tileSuit(tile) {
+    return tile[1]
+}
+
+/**
  * @param {Tile} tile
  */
 function isYaochu(tile) {
-    const { num, simple } = tileProps(tile)
-    return !simple && !bonus || num === 1 || num === 9
+    const { num, simple, bonus } = tileProps(tile)
+    return !simple && !bonus || simple && (num === 1 || num === 9)
+}
+
+/**
+ * @param {Tile} tile 
+ */
+function isWindTile(tile) {
+    return tile === "1z" || tile === "2z" || tile === "3z" || tile === "4z"
+}
+
+/**
+ * @param {Tile} tile 
+ */
+function isDragonTile(tile) {
+    return tile === "5z" || tile === "6z" || tile === "7z"
+}
+
+/**
+ * @param {Tile} tile
+ */
+function isHonor(tile) {
+    const suit = tileSuit(tile)
+    return suit === "z"
 }
 
 /**
@@ -436,7 +484,6 @@ function countMelds(hand, melds) {
 /**
  * @param {MeldsCount} count
  * @returns {boolean}
- * TODO: 国士無双に対応する
  */
 function isTingpai(count) {
     const { chow, pong, pair, dazi } = count
@@ -452,7 +499,6 @@ function isTingpai(count) {
 /**
  * @param {MeldsCount} count
  * @returns {boolean}
- * TODO: 国士無双に対応する
  */
 function isHu(count) {
     const { chow, pong, pair, dazi } = count
@@ -463,18 +509,29 @@ function isHu(count) {
 }
 
 /**
+ * @param {Tile[]} tiles 
+ */
+function isKokushimusou(tiles) {
+    return new Set(tiles.filter(isYaochu)).size === 13
+}
+
+/**
  * @param {Hand} hand
- * @returns {any[]}
+ * @returns {IterableIterator<MeldsStruct>}
  * @typedef Hand
  * @property {Tile[]} handTiles
  * @property {MeldCall[]} meldCalls
  * @property {Tile} pickedTile
  */
 export function* hu(hand) {
-    for (const melds of uniqueMelds([hand.pickedTile, ...hand.handTiles])) {
+    const tiles = [hand.pickedTile, ...hand.handTiles]
+    if (isKokushimusou(tiles)) {
+        yield { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }
+    }
+    for (const melds of uniqueMelds(tiles)) {
         const count = countMelds(hand, melds)
         if (isHu(count)) {
-            yield { hand, melds }
+            yield melds
         }
     }
 }
@@ -491,46 +548,179 @@ export function tileOfWind(wind) {
 }
 
 /**
- * @param {Hand} hand
- * @param {MeldsStruct} melds
- * @param {Wind} wind
- * @param {Wind} player
+ * @param {Tile} chow 
+ * @param {Tile} pickedTile 
  */
-function winningHand(hand, melds, wind, player) {
+function isRyanmenmachi(chow, pickedTile) {
+    if (tileSuit(chow) !== tileSuit(pickedTile)) return false
+    const chowNum = tileNum(chow)
+    const pickedNum = tileNum(pickedTile)
+    return (
+        (chowNum <= 6 && chowNum === pickedNum)
+        || (chowNum >= 2 && chowNum + 2 === pickedNum)
+    )
+}
+
+/**
+ * @typedef MahjongState
+ * @property {Hand} hand
+ * @property {MeldsStruct} melds
+ * @property {Wind} wind
+ * @property {Wind} player
+ */
+
+/**
+ * @param {MahjongState} state
+ */
+export function winningHand(state) {
+    const { hand, melds, wind, player } = state
     const isClosed = hand.handTiles.length === 13
+
+    /** @type {string[]} */
+    const yakuman = []
+    /** @type {[string, number][]} */
+    const yaku = []
+
+    /**
+     * @param {string} name 
+     * @param {boolean} cond 
+     */
+    function defineYakuman(name, cond) {
+        if (cond) {
+            yakuman.push(name)
+        }
+    }
+    /**
+     * @param {string} name 
+     * @param {boolean} cond 
+     * @param {number} closedFan 
+     * @param {number} openFan 
+     */
+    function defineYaku(name, cond, closedFan, openFan) {
+        const fan = isClosed ? closedFan : openFan
+        if (fan > 0 && cond) {
+            yaku.push([name, fan])
+        }
+    }
+
+    const pickedTile = replaceAkaDora(hand.pickedTile)
+
     const tiles = [
         ...hand.handTiles,
         ...hand.meldCalls.map(c => c.tiles).flat(),
         hand.pickedTile]
+        .map(replaceAkaDora)
 
+    const someIsHonor = tiles.some(tile => tileSuit(tile) === "z")
+    const everyIsYaochu = tiles.every(isYaochu)
     /** @type {Set<Tile>} */
     const greens = new Set(["2s", "3s", "4s", "6s", "8s", "6z"])
-    const ryuuiiso = tiles.every(tile => greens.has(tile))
+    const routoupai = new Set(["1m", "9m", "1s", "9s", "1p", "9p"])
+    const suitCardinality = new Set(
+        tiles.map(tileSuit)
+            .filter(suit => suit !== "z" && suit !== "h")).size
+
+    defineYakuman("国士無双",
+        isClosed
+        && everyIsYaochu
+        && new Set(tiles.filter(isYaochu)).size === 13)
+    defineYakuman("緑一色", tiles.every(tile => greens.has(tile)))
+    defineYakuman("清老頭", tiles.every(tile => routoupai.has(tile)))
+    defineYakuman("字一色", someIsHonor && suitCardinality === 0)
+    defineYakuman("九蓮宝燈",
+        isClosed
+        && !someIsHonor
+        && suitCardinality === 1
+        && new Set(tiles).size === 9
+        && tiles.filter(tile => tile[0] === "1").length >= 3
+        && tiles.filter(tile => tile[0] === "9").length >= 3)
+
+    defineYaku("断么九", !tiles.some(isYaochu), 1, 1)
+    defineYaku("混老頭", everyIsYaochu, 2, 2)
+    defineYaku("混一色", someIsHonor && suitCardinality === 1, 3, 2)
+    defineYaku("清一色", !someIsHonor && suitCardinality === 1, 6, 5)
+
+    defineYaku("七対子", melds.pr.length === 7, 2, 0)
 
     if (melds.pr.length === 1) {
         const closedChow = melds.ch
         const openChow = hand.meldCalls
             .filter(c => c.type === "chow")
             .map(c => c.smallest)
-        const chow = [...openChow, ...closedChow]
+        const chow = lipai([...openChow, ...closedChow])
         const closedPong = melds.pg
         const openPong
             = hand.meldCalls
                 .filter(c => c.type === "pong")
                 .map(c => c.smallest)
-        const kong
+        const closedKong
             = hand.meldCalls
-                .filter(c => c.type === "kong")
+                .filter(c => c.type === "kong" && c.discarder === "self")
                 .map(c => c.smallest)
-        const pong = [...closedPong, ...openPong, ...kong]
+        const openKong
+            = hand.meldCalls
+                .filter(c => c.type === "kong" && c.discarder !== "self")
+                .map(c => c.smallest)
+        const pong = lipai([...closedPong, ...closedKong, ...openPong, ...openKong])
         const eyes = melds.pr[0]
 
-        const tanyao = !tiles.some(isYaochu) ? 1 : 0
-        const hanpai
-            = (pong.filter(tile => tile === "5z" || tile === "6z" || tile === "7z").length)
-            + (pong.includes(tileOfWind(wind)) ? 1 : 0)
-            + (pong.includes(tileOfWind(player)) ? 1 : 0)
-    } else if (melds.pr.length === 7) {
+        const chowTiles = new Set(chow)
+        const pongTiles = new Set(pong)
 
+        // limit hands
+        defineYakuman("四暗刻", closedPong.length + closedKong.length === 4)
+        defineYakuman("四槓子", closedKong.length + openKong.length === 4)
+        defineYakuman("大三元", pong.filter(isDragonTile).length === 3)
+        defineYakuman("大四喜", pong.filter(isWindTile).length === 4)
+        defineYakuman("小四喜", isWindTile(eyes) && pong.filter(isWindTile).length === 3)
+
+        defineYaku("役牌白", pong.includes("5z"), 1, 1)
+        defineYaku("役牌發", pong.includes("6z"), 1, 1)
+        defineYaku("役牌中", pong.includes("7z"), 1, 1)
+        defineYaku("場風牌", pong.includes(tileOfWind(wind)), 1, 1)
+        defineYaku("自風牌", pong.includes(tileOfWind(player)), 1, 1)
+
+        const fanpai = new Set(["5z", "6z", "7z", tileOfWind(wind), tileOfWind(player)])
+
+        defineYaku("平和",
+            chow.length === 4
+            && !fanpai.has(eyes)
+            && closedChow.some(chowTile => isRyanmenmachi(chowTile, pickedTile)),
+            1, 0)
+        defineYaku("三色同順",
+            Array.from("1234567")
+                .some(n =>
+                    chowTiles.has(`${n}m`)
+                    && chowTiles.has(`${n}p`)
+                    && chowTiles.has(`${n}s`)),
+            2, 1)
+        defineYaku("一気通貫",
+            Array.from("mps")
+                .some(suit =>
+                    chowTiles.has(`1${suit}`)
+                    && chowTiles.has(`4${suit}`)
+                    && chowTiles.has(`7${suit}`)),
+            2, 1)
+        defineYaku("三色同刻",
+            Array.from("123456789")
+                .some(n =>
+                    pongTiles.has(`${n}m`)
+                    && pongTiles.has(`${n}p`)
+                    && pongTiles.has(`${n}s`)),
+            2, 2)
+        defineYaku("対々和", pong.length === 4, 2, 2)
+        defineYaku("一盃口", chowTiles.size === chow.length - 1, 1, 0)
+        defineYaku("二盃口", chow.length === 4 && chow[0] === chow[1] && chow[2] === chow[3], 3, 0)
+        const chantaChow = new Set(["1m", "7m", "1s", "7s", "1p", "7p"])
+        const isChanta
+            = chow.every(tile => chantaChow.has(tile))
+            && pong.every(isYaochu)
+            && isYaochu(eyes)
+        defineYaku("混全帯么九", isChanta && someIsHonor && !everyIsYaochu, 2, 1)
+        defineYaku("純全帯么九", isChanta && !someIsHonor && !everyIsYaochu, 3, 2)
+        defineYaku("三暗刻", closedPong.length + closedKong.length === 3, 2, 2)
+        defineYaku("小三元", isDragonTile(eyes) && pong.filter(isDragonTile).length === 2, 2, 2)
+        defineYaku("三槓子", closedKong.length + openKong.length === 3, 2, 2)
     }
+    return { yakuman, yaku }
 }
