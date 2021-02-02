@@ -31,6 +31,11 @@ const hands = [
         meldCalls: [],
         pickedTile: "7z",
     },
+    {
+        handTiles: parseShortCode("2234455m234s234p"),
+        meldCalls: [],
+        pickedTile: "3m",
+    },
 ]
 const player = "east"
 const wind = "east"

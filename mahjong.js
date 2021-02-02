@@ -709,8 +709,9 @@ export function winningHand(state) {
                     && pongTiles.has(`${n}s`)),
             2, 2)
         defineYaku("対々和", pong.length === 4, 2, 2)
-        defineYaku("一盃口", chowTiles.size === chow.length - 1, 1, 0)
-        defineYaku("二盃口", chow.length === 4 && chow[0] === chow[1] && chow[2] === chow[3], 3, 0)
+        const ryanpeekoo = chow.length === 4 && chow[0] === chow[1] && chow[2] === chow[3]
+        defineYaku("一盃口", !ryanpeekoo && chowTiles.size < chow.length, 1, 0)
+        defineYaku("二盃口", ryanpeekoo, 3, 0)
         const chantaChow = new Set(["1m", "7m", "1s", "7s", "1p", "7p"])
         const isChanta
             = chow.every(tile => chantaChow.has(tile))
