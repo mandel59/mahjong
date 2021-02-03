@@ -175,6 +175,54 @@ export function shortCode(tiles) {
  */
 
 /**
+ * 
+ * @param {MeldType} type
+ * @param {string | Tile[]} tiles
+ * @param {RelativePlayer} discarder
+ * @param {Tile} discarded
+ * @returns {MeldCall}
+ */
+export function meldCall(type, tiles, discarder, discarded) {
+    const tilesArray = typeof tiles === "string" ? parseShortCode(tiles) : [...tiles]
+    if (!tilesArray.includes(discarded)) throw new RangeError()
+    const face = lipai(tilesArray.map(replaceAkaDora))
+    validateMeldCall(type, face)
+    const smallest = face[0]
+    return {
+        type,
+        tiles: tilesArray,
+        smallest,
+        discarder,
+        discarded,
+    }
+}
+
+/**
+ * @param {MeldType} type
+ * @param {Tile[]} tiles
+ */
+function validateMeldCall(type, tiles) {
+    if (type === "bonus") {
+        if (tiles.length !== 1) throw new RangeError()
+    } else if (type === "chow") {
+        if (tiles.length !== 3) throw new RangeError()
+        const suits = tiles.map(tileSuit)
+        const nums = tiles.map(tileNum)
+        if (!(suits[0] === "m" || suits[0] === "s" || suits[0] === "p")) throw new RangeError()
+        if (!(suits[0] === suits[1] && suits[0] === suits[2])) throw new RangeError()
+        if (!(nums[0] + 1 === nums[1] && nums[0] + 2 === nums[2])) throw new RangeError()
+    } else if (type === "pong") {
+        if (tiles.length !== 3) throw new RangeError()
+        if (!(tiles[0] === tiles[1] && tiles[0] === tiles[2])) throw new RangeError()
+    } else if (type === "kong") {
+        if (tiles.length !== 4) throw new RangeError()
+        if (!(tiles[0] === tiles[1]
+            && tiles[0] === tiles[2]
+            && tiles[0] === tiles[3])) throw new RangeError()
+    }
+}
+
+/**
  * @typedef {("east"|"south"|"west"|"north")} Wind
  * east: 東家
  * south: 南家

@@ -1,4 +1,4 @@
-import { parseShortCode, hu, winningHand } from "./mahjong.js"
+import { parseShortCode, hu, winningHand, meldCall } from "./mahjong.js"
 
 const hands = [
     {
@@ -36,8 +36,17 @@ const hands = [
         meldCalls: [],
         pickedTile: "3m",
     },
+    {
+        handTiles: parseShortCode("2224z"),
+        meldCalls: [
+            meldCall("pong", "333z", "bottom", "3z"),
+            meldCall("pong", "777z", "bottom", "7z"),
+            meldCall("pong", "999m", "bottom", "9m"),
+        ],
+        pickedTile: "4z",
+    },
 ]
-const player = "east"
+const player = "west"
 const wind = "east"
 for (const hand of hands) {
     for (const melds of hu(hand)) {
