@@ -731,9 +731,9 @@ export function winningHand(state) {
         const fanpai = new Set(["5z", "6z", "7z", tileOfWind(wind), tileOfWind(player)])
 
         defineYaku("平和",
-            chow.length === 4
+            closedChow.length === 4
             && !fanpai.has(eyes)
-            && closedChow.some(chowTile => isRyanmenmachi(chowTile, pickedTile)),
+            && chow.some(chowTile => isRyanmenmachi(chowTile, pickedTile)),
             1, 0)
         defineYaku("三色同順",
             Array.from("1234567")
