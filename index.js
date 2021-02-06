@@ -48,6 +48,7 @@ const hands = [
 ]
 const player = "west"
 const wind = "east"
+const zimo = false
 for (const hand of hands) {
     for (const melds of hu(hand)) {
         const state = {
@@ -55,8 +56,9 @@ for (const hand of hands) {
             melds,
             wind,
             player,
+            zimo,
         }
-        const { yakuman, yaku } = winningHand(state)
-        console.log(JSON.stringify({ state, yakuman, yaku }))
+        const { yakuman, yaku, fu, fan } = winningHand(state)
+        console.log(JSON.stringify({ state, yakuman, yaku, fu, fan }))
     }
 }

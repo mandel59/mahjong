@@ -610,23 +610,65 @@ function isRyanmenmachi(chow, pickedTile) {
 }
 
 /**
+ * @typedef {"ryanmen"|"penchan"|"kanchan"|"shanpon"|"tanki"} Machi
+ * @param {MeldsStruct} melds
+ * @param {Tile} pickedTile
+ * @returns {IterableIterator<{machi: Machi, meld: Tile, fu: number}>}
+ */
+export function* findAllMachi(melds, pickedTile) {
+    for (const chow of melds.ch) {
+        if (tileSuit(chow) !== tileSuit(pickedTile)) continue
+        const chowNum = tileNum(chow)
+        const pickedNum = tileNum(pickedTile)
+        if (
+            (chowNum <= 6 && chowNum === pickedNum)
+            || (chowNum >= 2 && chowNum + 2 === pickedNum)
+        ) {
+            // 両面待ち
+            yield { machi: "ryanmen", meld: chow, fu: 0 }
+        } else if (
+            (chowNum === 7 && pickedNum === 7)
+            || (chowNum === 1 && pickedNum === 3)) {
+            // 辺張待ち
+            yield { machi: "penchan", meld: chow, fu: 2 }
+        } else if (chowNum + 1 === pickedNum) {
+            // 嵌張待ち
+            yield { machi: "kanchan", meld: chow, fu: 2 }
+        }
+    }
+    for (const pong of melds.pg) {
+        if (pong === pickedTile) {
+            // 双碰待ち
+            yield { machi: "shanpon", meld: pong, fu: 0 }
+        }
+    }
+    for (const pair of melds.pr) {
+        if (pair === pickedTile) {
+            // 単騎待ち
+            yield { machi: "tanki", meld: pair, fu: 2 }
+        }
+    }
+}
+
+/**
  * @typedef MahjongState
  * @property {Hand} hand
  * @property {MeldsStruct} melds
  * @property {Wind} wind
  * @property {Wind} player
+ * @property {boolean} zimo
  */
 
 /**
  * @param {MahjongState} state
  */
 export function winningHand(state) {
-    const { hand, melds, wind, player } = state
+    const { hand, melds, wind, player, zimo } = state
     const isClosed = hand.handTiles.length === 13
 
     /** @type {string[]} */
     const yakuman = []
-    /** @type {[string, number][]} */
+    /** @type {[name: string, fan: number][]} */
     const yaku = []
 
     /**
@@ -688,88 +730,149 @@ export function winningHand(state) {
     defineYaku("混一色", someIsHonor && suitCardinality === 1, 3, 2)
     defineYaku("清一色", !someIsHonor && suitCardinality === 1, 6, 5)
 
-    defineYaku("七対子", melds.pr.length === 7, 2, 0)
+    const chitoitsuForm = melds.pr.length === 7
+    defineYaku("七対子", chitoitsuForm && new Set(melds.pr).size === 7, 2, 0)
 
-    if (melds.pr.length === 1) {
-        const closedChow = melds.ch
-        const openChow = hand.meldCalls
-            .filter(c => c.type === "chow")
+    const closedChow = melds.ch
+    const openChow = hand.meldCalls
+        .filter(c => c.type === "chow")
+        .map(c => c.smallest)
+    const chow = lipai([...openChow, ...closedChow])
+    const closedPong = melds.pg
+    const openPong
+        = hand.meldCalls
+            .filter(c => c.type === "pong")
             .map(c => c.smallest)
-        const chow = lipai([...openChow, ...closedChow])
-        const closedPong = melds.pg
-        const openPong
-            = hand.meldCalls
-                .filter(c => c.type === "pong")
-                .map(c => c.smallest)
-        const closedKong
-            = hand.meldCalls
-                .filter(c => c.type === "kong" && c.discarder === "self")
-                .map(c => c.smallest)
-        const openKong
-            = hand.meldCalls
-                .filter(c => c.type === "kong" && c.discarder !== "self")
-                .map(c => c.smallest)
-        const pong = lipai([...closedPong, ...closedKong, ...openPong, ...openKong])
-        const eyes = melds.pr[0]
+    const closedKong
+        = hand.meldCalls
+            .filter(c => c.type === "kong" && c.discarder === "self")
+            .map(c => c.smallest)
+    const openKong
+        = hand.meldCalls
+            .filter(c => c.type === "kong" && c.discarder !== "self")
+            .map(c => c.smallest)
+    const pong = lipai([...closedPong, ...closedKong, ...openPong, ...openKong])
+    const chowTiles = new Set(chow)
+    const pongTiles = new Set(pong)
+    const eyes = melds.pr.length === 1 ? melds.pr[0] : null
+    /** @type {Set<Tile>} */
+    const fanpai = new Set(["5z", "6z", "7z", tileOfWind(wind), tileOfWind(player)])
 
-        const chowTiles = new Set(chow)
-        const pongTiles = new Set(pong)
+    const pinghuForm
+        = chow.length === 4
+        && eyes != null
+        && !fanpai.has(eyes)
+        && chow.some(chowTile => isRyanmenmachi(chowTile, pickedTile))
 
-        // limit hands
-        defineYakuman("四暗刻", closedPong.length + closedKong.length === 4)
-        defineYakuman("四槓子", closedKong.length + openKong.length === 4)
-        defineYakuman("大三元", pong.filter(isDragonTile).length === 3)
-        defineYakuman("大四喜", pong.filter(isWindTile).length === 4)
-        defineYakuman("小四喜", isWindTile(eyes) && pong.filter(isWindTile).length === 3)
+    // limit hands
+    defineYakuman("四暗刻", closedPong.length + closedKong.length === 4)
+    defineYakuman("四槓子", closedKong.length + openKong.length === 4)
+    defineYakuman("大三元", pong.filter(isDragonTile).length === 3)
+    defineYakuman("大四喜", pong.filter(isWindTile).length === 4)
+    defineYakuman("小四喜", eyes != null && isWindTile(eyes) && pong.filter(isWindTile).length === 3)
 
-        defineYaku("役牌白", pong.includes("5z"), 1, 1)
-        defineYaku("役牌發", pong.includes("6z"), 1, 1)
-        defineYaku("役牌中", pong.includes("7z"), 1, 1)
-        defineYaku("場風牌", pong.includes(tileOfWind(wind)), 1, 1)
-        defineYaku("自風牌", pong.includes(tileOfWind(player)), 1, 1)
+    defineYaku("役牌白", pong.includes("5z"), 1, 1)
+    defineYaku("役牌發", pong.includes("6z"), 1, 1)
+    defineYaku("役牌中", pong.includes("7z"), 1, 1)
+    defineYaku("場風牌", pong.includes(tileOfWind(wind)), 1, 1)
+    defineYaku("自風牌", pong.includes(tileOfWind(player)), 1, 1)
 
-        const fanpai = new Set(["5z", "6z", "7z", tileOfWind(wind), tileOfWind(player)])
+    defineYaku("平和", pinghuForm, 1, 0)
+    defineYaku("三色同順",
+        Array.from("1234567")
+            .some(n =>
+                chowTiles.has(`${n}m`)
+                && chowTiles.has(`${n}p`)
+                && chowTiles.has(`${n}s`)),
+        2, 1)
+    defineYaku("一気通貫",
+        Array.from("mps")
+            .some(suit =>
+                chowTiles.has(`1${suit}`)
+                && chowTiles.has(`4${suit}`)
+                && chowTiles.has(`7${suit}`)),
+        2, 1)
+    defineYaku("三色同刻",
+        Array.from("123456789")
+            .some(n =>
+                pongTiles.has(`${n}m`)
+                && pongTiles.has(`${n}p`)
+                && pongTiles.has(`${n}s`)),
+        2, 2)
+    defineYaku("対々和", pong.length === 4, 2, 2)
+    const ryanpeekoo = chow.length === 4 && chow[0] === chow[1] && chow[2] === chow[3]
+    defineYaku("一盃口", !ryanpeekoo && chowTiles.size < chow.length, 1, 0)
+    defineYaku("二盃口", ryanpeekoo, 3, 0)
+    const chantaChow = new Set(["1m", "7m", "1s", "7s", "1p", "7p"])
+    const isChanta
+        = eyes != null
+        && chow.every(tile => chantaChow.has(tile))
+        && pong.every(isYaochu)
+        && isYaochu(eyes)
+    defineYaku("混全帯么九", isChanta && someIsHonor && !everyIsYaochu, 2, 1)
+    defineYaku("純全帯么九", isChanta && !someIsHonor && !everyIsYaochu, 3, 2)
+    defineYaku("三暗刻", closedPong.length + closedKong.length === 3, 2, 2)
+    defineYaku("小三元", eyes != null && isDragonTile(eyes) && pong.filter(isDragonTile).length === 2, 2, 2)
+    defineYaku("三槓子", closedKong.length + openKong.length === 3, 2, 2)
 
-        defineYaku("平和",
-            closedChow.length === 4
-            && !fanpai.has(eyes)
-            && chow.some(chowTile => isRyanmenmachi(chowTile, pickedTile)),
-            1, 0)
-        defineYaku("三色同順",
-            Array.from("1234567")
-                .some(n =>
-                    chowTiles.has(`${n}m`)
-                    && chowTiles.has(`${n}p`)
-                    && chowTiles.has(`${n}s`)),
-            2, 1)
-        defineYaku("一気通貫",
-            Array.from("mps")
-                .some(suit =>
-                    chowTiles.has(`1${suit}`)
-                    && chowTiles.has(`4${suit}`)
-                    && chowTiles.has(`7${suit}`)),
-            2, 1)
-        defineYaku("三色同刻",
-            Array.from("123456789")
-                .some(n =>
-                    pongTiles.has(`${n}m`)
-                    && pongTiles.has(`${n}p`)
-                    && pongTiles.has(`${n}s`)),
-            2, 2)
-        defineYaku("対々和", pong.length === 4, 2, 2)
-        const ryanpeekoo = chow.length === 4 && chow[0] === chow[1] && chow[2] === chow[3]
-        defineYaku("一盃口", !ryanpeekoo && chowTiles.size < chow.length, 1, 0)
-        defineYaku("二盃口", ryanpeekoo, 3, 0)
-        const chantaChow = new Set(["1m", "7m", "1s", "7s", "1p", "7p"])
-        const isChanta
-            = chow.every(tile => chantaChow.has(tile))
-            && pong.every(isYaochu)
-            && isYaochu(eyes)
-        defineYaku("混全帯么九", isChanta && someIsHonor && !everyIsYaochu, 2, 1)
-        defineYaku("純全帯么九", isChanta && !someIsHonor && !everyIsYaochu, 3, 2)
-        defineYaku("三暗刻", closedPong.length + closedKong.length === 3, 2, 2)
-        defineYaku("小三元", isDragonTile(eyes) && pong.filter(isDragonTile).length === 2, 2, 2)
-        defineYaku("三槓子", closedKong.length + openKong.length === 3, 2, 2)
+    function calculateFu() {
+        if (chitoitsuForm) return 25
+        if (pinghuForm) {
+            // 平和、ロン
+            if (isClosed && !zimo) return 30
+            // 平和、ツモ
+            if (isClosed && zimo) return 20
+            // 喰い平和形式
+            if (!isClosed && !zimo) return 30
+            // その他の場合は通常どおり計算する
+        }
+        const futei = 20
+        const menzenkafu = isClosed && !zimo ? 10 : 0
+        const zimoFu = zimo ? 2 : 0
+
+        /** 明刻・么九 */
+        const opy = openPong.filter(isYaochu).length
+        /** 明刻・中張 */
+        const opz = openPong.length - opy
+        /** 暗刻・么九 */
+        const cpy = closedPong.filter(isYaochu).length
+        /** 暗刻・中張 */
+        const cpz = closedPong.length - cpy
+        /** 明槓・么九 */
+        const oky = openKong.filter(isYaochu).length
+        /** 明槓・中張 */
+        const okz = openKong.length - oky
+        /** 暗槓・么九 */
+        const cky = closedKong.filter(isYaochu).length
+        /** 暗槓・中張 */
+        const ckz = closedKong.length - cky
+        const eyesFanpai = eyes != null && fanpai.has(eyes)
+        const lianfeng = tileOfWind(wind) === tileOfWind(player) && eyes === tileOfWind(wind)
+
+        const machiFu
+            = Math.max(
+                ...Array.from(
+                    findAllMachi(melds, pickedTile),
+                    ({ fu }) => fu))
+
+        return Math.ceil((
+            futei
+            + menzenkafu
+            + zimoFu
+            + opy * 4 + opz * 2
+            + cpy * 8 + cpz * 4
+            + oky * 16 + okz * 8
+            + cky * 32 + ckz * 16
+            + (lianfeng ? 4 : eyesFanpai ? 2 : 0)
+            + machiFu
+        ) / 10) * 10
     }
-    return { yakuman, yaku }
+
+    if (yakuman.length > 0) {
+        return { yakuman }
+    } else {
+        const fu = calculateFu()
+        const fan = yaku.map(([_, f]) => f).reduce((x, y) => x + y)
+        return { yaku, fu, fan }
+    }
 }
