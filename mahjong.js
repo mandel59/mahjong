@@ -656,6 +656,7 @@ export function* findAllMachi(melds, pickedTile) {
  * @property {MeldsStruct} melds
  * @property {Wind} wind
  * @property {Wind} player
+ * @property {boolean} lizhi
  * @property {boolean} zimo
  */
 
@@ -663,10 +664,10 @@ export function* findAllMachi(melds, pickedTile) {
  * @param {MahjongState} state
  */
 export function winningHand(state) {
-    const { hand, melds, wind, player, zimo } = state
+    const { hand, melds, wind, player, lizhi, zimo } = state
     const isClosed = hand.handTiles.length === 13
 
-    /** @type {string[]} */
+    /** @type {[name: string, bai: number][]} */
     const yakuman = []
     /** @type {[name: string, fan: number][]} */
     const yaku = []
@@ -675,9 +676,9 @@ export function winningHand(state) {
      * @param {string} name 
      * @param {boolean} cond 
      */
-    function defineYakuman(name, cond) {
+    function defineYakuman(name, cond, bai = 1) {
         if (cond) {
-            yakuman.push(name)
+            yakuman.push([name, bai])
         }
     }
     /**
@@ -710,20 +711,24 @@ export function winningHand(state) {
         tiles.map(tileSuit)
             .filter(suit => suit !== "z" && suit !== "h")).size
 
-    defineYakuman("国士無双",
-        isClosed
+    const 国士無双 = isClosed
         && everyIsYaochu
-        && new Set(tiles.filter(isYaochu)).size === 13)
+        && new Set(tiles.filter(isYaochu)).size === 13
+    const 国士無双十三面待ち = 国士無双 && new Set(hand.handTiles.filter(isYaochu)).size === 13
+    defineYakuman("国士無双十三面待ち", 国士無双十三面待ち, 2)
+    defineYakuman("国士無双", 国士無双 && !国士無双十三面待ち)
     defineYakuman("緑一色", tiles.every(tile => greens.has(tile)))
     defineYakuman("清老頭", tiles.every(tile => routoupai.has(tile)))
     defineYakuman("字一色", someIsHonor && suitCardinality === 0)
-    defineYakuman("九蓮宝燈",
-        isClosed
+    const 九連宝燈 = isClosed
         && !someIsHonor
         && suitCardinality === 1
         && new Set(tiles).size === 9
         && tiles.filter(tile => tile[0] === "1").length >= 3
-        && tiles.filter(tile => tile[0] === "9").length >= 3)
+        && tiles.filter(tile => tile[0] === "9").length >= 3
+    const 純正九蓮宝燈 = 九連宝燈 && /^1112345678999[mps]$/.test(shortCode(lipai(hand.handTiles.map(replaceAkaDora))))
+    defineYakuman("純正九蓮宝燈", 純正九蓮宝燈, 2)
+    defineYakuman("九蓮宝燈", 九連宝燈 && !純正九蓮宝燈)
 
     defineYaku("断么九", !tiles.some(isYaochu), 1, 1)
     defineYaku("混老頭", everyIsYaochu, 2, 2)
@@ -765,10 +770,13 @@ export function winningHand(state) {
         && chow.some(chowTile => isRyanmenmachi(chowTile, pickedTile))
 
     // limit hands
-    defineYakuman("四暗刻", closedPong.length + closedKong.length === 4)
+    const 四暗刻 = closedPong.length + closedKong.length === 4
+    const 四暗刻単騎待ち = 四暗刻 && pickedTile === eyes
+    defineYakuman("四暗刻単騎待ち", 四暗刻 && 四暗刻単騎待ち, 2)
+    defineYakuman("四暗刻", 四暗刻 && !四暗刻単騎待ち)
     defineYakuman("四槓子", closedKong.length + openKong.length === 4)
     defineYakuman("大三元", pong.filter(isDragonTile).length === 3)
-    defineYakuman("大四喜", pong.filter(isWindTile).length === 4)
+    defineYakuman("大四喜", pong.filter(isWindTile).length === 4, 2)
     defineYakuman("小四喜", eyes != null && isWindTile(eyes) && pong.filter(isWindTile).length === 3)
 
     defineYaku("役牌白", pong.includes("5z"), 1, 1)
@@ -777,6 +785,7 @@ export function winningHand(state) {
     defineYaku("場風牌", pong.includes(tileOfWind(wind)), 1, 1)
     defineYaku("自風牌", pong.includes(tileOfWind(player)), 1, 1)
 
+    defineYaku("立直", lizhi, 1, 0)
     defineYaku("門前清自摸和", zimo && openChow.length + openPong.length + openKong.length === 0, 1, 0)
     defineYaku("平和", pinghuForm, 1, 0)
     defineYaku("三色同順",
@@ -870,10 +879,26 @@ export function winningHand(state) {
     }
 
     if (yakuman.length > 0) {
-        return { yakuman }
+        const basicPoints = 8000 * yakuman.map(([_, bai]) => bai).reduce((x, y) => x + y, 0)
+        return { yakuman, basicPoints }
     } else {
         const fu = calculateFu()
         const fan = yaku.map(([_, f]) => f).reduce((x, y) => x + y, 0)
-        return { yaku, fu, fan }
+        const basicPoints = calcBasicPoints(fu, fan)
+        return { yaku, fu, fan, basicPoints }
     }
+}
+
+/**
+ * 
+ * @param {number} fu
+ * @param {number} fan
+ */
+export function calcBasicPoints(fu, fan) {
+    if (fan === 0) return 0
+    if (fan >= 13) return 8000
+    if (fan >= 11) return 6000
+    if (fan >= 8) return 4000
+    if (fan >= 6) return 3000
+    return Math.min(fu * 2 ** (2 + fan), 2000)
 }

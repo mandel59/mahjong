@@ -45,20 +45,38 @@ const hands = [
         ],
         pickedTile: "4z",
     },
+    {
+        handTiles: parseShortCode("1122344m234p234s"),
+        meldCalls: [],
+        pickedTile: "3m",
+    },
+    {
+        handTiles: parseShortCode("123m234567p99s11z"),
+        meldCalls: [],
+        pickedTile: "9s",
+    },
 ]
 const player = "west"
 const wind = "east"
+const lizhi = true
 const zimo = false
 for (const hand of hands) {
-    for (const melds of hu(hand)) {
-        const state = {
-            hand,
-            melds,
-            wind,
-            player,
-            zimo,
-        }
-        const { yakuman, yaku, fu, fan } = winningHand(state)
-        console.log(JSON.stringify({ state, yakuman, yaku, fu, fan }))
-    }
+    console.log(JSON.stringify({
+        hand,
+        wind,
+        player,
+        lizhi,
+        zimo,
+        hu: Array.from(hu(hand)).map(melds => {
+            const state = {
+                hand,
+                melds,
+                wind,
+                player,
+                lizhi,
+                zimo,
+            }
+            return winningHand(state)
+        })
+    }))
 }
