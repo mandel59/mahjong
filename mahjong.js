@@ -569,17 +569,36 @@ function isKokushimusou(tiles) {
  * @typedef Hand
  * @property {Tile[]} handTiles
  * @property {MeldCall[]} meldCalls
- * @property {Tile} pickedTile
+ * @property {Tile | null} pickedTile
  */
 export function* hu(hand) {
-    const tiles = [hand.pickedTile, ...hand.handTiles]
+    for (const [type, melds] of searchMelds(hand)) {
+        if (type === "hu") {
+            yield melds
+        }
+    }
+}
+
+/**
+ * @param {Hand} hand
+ * @returns {IterableIterator<[type: "hu"|"tingpai", melds: MeldsStruct]>}
+ */
+export function* searchMelds(hand) {
+    const tiles = hand.pickedTile ? [hand.pickedTile, ...hand.handTiles] : hand.handTiles
     if (isKokushimusou(tiles)) {
-        yield { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }
+        if (hand.length === 14) {
+            yield ["hu", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
+        } else {
+            yield ["tingpai", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
+        }
     }
     for (const melds of uniqueMelds(tiles)) {
         const count = countMelds(hand, melds)
         if (isHu(count)) {
-            yield melds
+            yield ["hu", melds]
+        }
+        if (isTingpai(count)) {
+            yield ["tingpai", melds]
         }
     }
 }
@@ -648,6 +667,50 @@ export function* findAllMachi(melds, pickedTile) {
             yield { machi: "tanki", meld: pair, fu: 2 }
         }
     }
+}
+
+/**
+ * @param {MeldsStruct} melds
+ * @returns {IterableIterator<Tile>}
+ */
+export function* tingpaiTiles(melds) {
+    const { pr, dz, qd, sg } = melds
+    // 双碰待ち
+    if (pr.length === 2) {
+        // 同一牌の対子が2組の場合は除外
+        if (pr[0] === pr[1]) {
+            return
+        }
+        yield* pr
+        return
+    }
+    // 嵌張待ち
+    if (qd.length === 1) {
+        const num = tileNum(qd[0])
+        const suit = tileSuit(qd[0])
+        yield `${num + 1}${suit}`
+        return
+    }
+    if (dz.length === 1) {
+        const num = tileNum(dz[0])
+        const suit = tileSuit(dz[0])
+        // 辺張待ち（12）
+        if (num === 1) {
+            yield `3${suit}`
+            return
+        }
+        // 辺張待ち（89）
+        if (num === 8) {
+            yield `7${suit}`
+            return
+        }
+        // 両面待ち
+        yield `${num - 1}${suit}`
+        yield `${num + 2}${suit}`
+        return
+    }
+    // 単騎待ち
+    yield* sg
 }
 
 /**

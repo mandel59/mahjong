@@ -1,4 +1,4 @@
-import { parseShortCode, hu, winningHand, meldCall } from "./mahjong.js"
+import { parseShortCode, searchMelds, tingpaiTiles, winningHand, meldCall, lipai } from "./mahjong.js"
 
 const hands = [
     {
@@ -51,23 +51,38 @@ const hands = [
         pickedTile: "3m",
     },
     {
+        handTiles: parseShortCode("1234445678999p"),
+        meldCalls: [],
+        pickedTile: null,
+    },
+    {
         handTiles: parseShortCode("123m234567p99s11z"),
         meldCalls: [],
-        pickedTile: "9s",
+        pickedTile: null,
     },
 ]
 const player = "west"
 const wind = "east"
-const lizhi = true
+const lizhi = false
 const zimo = false
 for (const hand of hands) {
+    const allMelds = Array.from(searchMelds(hand))
+    const huMelds = allMelds.filter(([type, _]) => type === "hu").map(([_, melds]) => melds)
+    const tingpaiMelds = allMelds.filter(([type, _]) => type === "tingpai").map(([_, melds]) => melds)
+    const tingpai = new Set()
+    for (const melds of tingpaiMelds) {
+        const s = new Set()
+        for (const tile of tingpaiTiles(melds)) {
+            tingpai.add(tile)
+        }
+    }
     console.log(JSON.stringify({
         hand,
         wind,
         player,
         lizhi,
         zimo,
-        hu: Array.from(hu(hand)).map(melds => {
+        hu: huMelds.map(melds => {
             const state = {
                 hand,
                 melds,
@@ -77,6 +92,7 @@ for (const hand of hands) {
                 zimo,
             }
             return winningHand(state)
-        })
+        }),
+        tingpai: lipai(Array.from(tingpai))
     }))
 }
