@@ -777,6 +777,7 @@ export function winningHand(state) {
     defineYaku("場風牌", pong.includes(tileOfWind(wind)), 1, 1)
     defineYaku("自風牌", pong.includes(tileOfWind(player)), 1, 1)
 
+    defineYaku("門前清自摸和", zimo && openChow.length + openPong.length + openKong.length === 0, 1, 0)
     defineYaku("平和", pinghuForm, 1, 0)
     defineYaku("三色同順",
         Array.from("1234567")
