@@ -872,7 +872,7 @@ export function winningHand(state) {
         return { yakuman }
     } else {
         const fu = calculateFu()
-        const fan = yaku.map(([_, f]) => f).reduce((x, y) => x + y)
+        const fan = yaku.map(([_, f]) => f).reduce((x, y) => x + y, 0)
         return { yaku, fu, fan }
     }
 }
