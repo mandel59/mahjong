@@ -1,5 +1,7 @@
 # 麻雀 役・聴牌判定器
 
+[麻雀 役・聴牌判定器 Web版](https://mandel59.github.io/mahjong/)
+
 ## Web版 使い方
 
 - 1m〜9m: 萬子
