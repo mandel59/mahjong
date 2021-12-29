@@ -143,6 +143,19 @@ export function shortCode(tiles) {
 }
 
 /**
+ * 
+ * @param {Tile[]} tiles
+ */
+export function countEachTiles(tiles) {
+    /** @type {Map<Tile, number>} */
+    const m = new Map()
+    for (const s of tiles) {
+        m.set(s, (m.get(s) ?? 0) + 1)
+    }
+    return m
+}
+
+/**
  * @typedef MeldsStruct
  * Each of melds are represented as its smallest tile.
  * @property {Tile[]} ch Chow e.g. 2m3m4m, 4p5p6p (represented as 2m, 4p)
@@ -686,9 +699,15 @@ export function* findAllMachi(melds, pickedTile) {
 
 /**
  * @param {MeldsStruct} melds
+ * @param {Hand} hand
  * @returns {IterableIterator<[Tile, Tile]>}
  */
-export function* tingpaiTiles(melds) {
+export function* tingpaiTiles(melds, hand) {
+    const tiles = tilesInHand(hand)
+    const allInHandTiles = new Set(
+        Array.from(countEachTiles(tiles).entries())
+            .filter(([_, n]) => n === 4)
+            .map(([t, _]) => t))
     const { pr, dz, qd, sg } = melds
     // 双碰待ち
     if (pr.length === 2) {
@@ -698,7 +717,7 @@ export function* tingpaiTiles(melds) {
         }
         const s = sg.length === 1 ? sg[0] : null
         for (const t of pr) {
-            if (t !== s) {
+            if (t !== s && !allInHandTiles.has(t)) {
                 yield [s, t]
             }
         }
@@ -710,7 +729,7 @@ export function* tingpaiTiles(melds) {
         const suit = tileSuit(qd[0])
         const s = sg.length === 1 ? sg[0] : null
         const t = `${num + 1}${suit}`
-        if (t !== s) {
+        if (t !== s && !allInHandTiles.has(t)) {
             yield [s, t]
         }
         return
@@ -722,7 +741,7 @@ export function* tingpaiTiles(melds) {
         // 辺張待ち（12）
         if (num === 1) {
             const t = `3${suit}`
-            if (t !== s) {
+            if (t !== s && !allInHandTiles.has(t)) {
                 yield [s, t]
             }
             return
@@ -730,7 +749,7 @@ export function* tingpaiTiles(melds) {
         // 辺張待ち（89）
         if (num === 8) {
             const t = `7${suit}`
-            if (t !== s) {
+            if (t !== s && !allInHandTiles.has(t)) {
                 yield [s, t]
             }
             return
@@ -738,13 +757,13 @@ export function* tingpaiTiles(melds) {
         // 両面待ち
         {
             const t = `${num - 1}${suit}`
-            if (t !== s) {
+            if (t !== s && !allInHandTiles.has(t)) {
                 yield [s, t]
             }
         }
         {
             const t = `${num + 2}${suit}`
-            if (t !== s) {
+            if (t !== s && !allInHandTiles.has(t)) {
                 yield [s, t]
             }
         }
@@ -755,23 +774,24 @@ export function* tingpaiTiles(melds) {
         if (sg[0] === sg[1]) {
             return
         }
-        yield [sg[0], sg[1]]
-        yield [sg[1], sg[0]]
+        if (!allInHandTiles.has(sg[1])) {
+            yield [sg[0], sg[1]]
+        }
+        if (!allInHandTiles.has(sg[0])) {
+            yield [sg[1], sg[0]]
+        }
         return
     }
     if (sg.length === 1) {
-        yield [null, sg[0]]
+        if (!allInHandTiles.has(sg[0])) {
+            yield [null, sg[0]]
+        }
     }
     // 国士無双の待ち
     const uniqueYaochu = new Set(sg.filter(isYaochu)).size
     if (uniqueYaochu === 13) {
         if (sg.filter(isYaochu).length === 14) {
-            /** @type {Map<string, number>} */
-            const m = new Map()
-            for (const s of sg) {
-                m.set(s, (m.get(s) ?? 0) + 1)
-            }
-            const s = Array.from(m.entries()).find(e => e[1] === 2)[0]
+            const s = Array.from(countEachTiles(sg).entries()).find(e => e[1] === 2)[0]
             for (const t of yaochuTiles) {
                 if (t !== s) {
                     yield [s, t]
@@ -788,12 +808,7 @@ export function* tingpaiTiles(melds) {
             return
         }
     } else if (uniqueYaochu === 12) {
-        /** @type {Map<string, number>} */
-        const m = new Map()
-        for (const s of sg) {
-            m.set(s, (m.get(s) ?? 0) + 1)
-        }
-        const s = Array.from(m.entries()).find(e => e[1] === 3)?.[0]
+        const s = Array.from(countEachTiles(sg).entries()).find(e => e[1] === 3)?.[0]
             ?? sg.find(t => !isYaochu(t))
             ?? null
         for (const t of yaochuTiles) {
@@ -818,6 +833,22 @@ export function* tingpaiTiles(melds) {
  * @property {boolean} zimo
  * @property {Tile[]} dora
  */
+
+/**
+ * @param {Hand} hand
+ */
+export function tilesInHand(hand) {
+    /** @type {Tile[]} */
+    const tiles = [
+        ...hand.handTiles,
+        ...hand.meldCalls
+            .filter(c => c.type !== "bonus")
+            .map(c => c.tiles)
+            .flat(),
+        hand.pickedTile]
+        .map(replaceAkaDora)
+    return tiles
+}
 
 /**
  * @param {MahjongState} state

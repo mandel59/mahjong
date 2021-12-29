@@ -47,7 +47,7 @@ function update() {
   function getUniqueTingpaiReplacements() {
     const tingpai = new Map()
     for (const melds of tingpaiMelds) {
-      for (const r of tingpaiTiles(melds)) {
+      for (const r of tingpaiTiles(melds, hand)) {
         const [s, t] = r
         tingpai.set(`${s}-${t}`, r)
       }
