@@ -299,6 +299,16 @@ function replaceAkaDora(tile) {
 /**
  * @param {Tile} tile 
  */
+function isAkaDora(tile) {
+    if (tile === "0m") return true
+    if (tile === "0p") return true
+    if (tile === "0s") return true
+    return false
+}
+
+/**
+ * @param {Tile} tile 
+ */
 function tileNum(tile) {
     // treat Aka Doras (0m, 0p, 0s) as 5-simples.
     const num = tile[0] === "0" ? 5 : Number(tile[0])
@@ -723,13 +733,14 @@ export function* tingpaiTiles(melds) {
  * @property {Wind} player
  * @property {boolean} lizhi
  * @property {boolean} zimo
+ * @property {Tile[]} dora
  */
 
 /**
  * @param {MahjongState} state
  */
 export function winningHand(state) {
-    const { hand, melds, wind, player, lizhi, zimo } = state
+    const { hand, melds, wind, player, lizhi, zimo, dora = [] } = state
     const isClosed = hand.handTiles.length === 13
 
     /** @type {[name: string, bai: number][]} */
@@ -761,11 +772,17 @@ export function winningHand(state) {
 
     const pickedTile = replaceAkaDora(hand.pickedTile)
 
-    const tiles = [
+    const originalTilesWithBonus = [
         ...hand.handTiles,
         ...hand.meldCalls.map(c => c.tiles).flat(),
         hand.pickedTile]
-        .map(replaceAkaDora)
+    const originalTiles = [
+        ...hand.handTiles,
+        ...hand.meldCalls.filter(c => c.type !== "bonus").map(c => c.tiles).flat(),
+        hand.pickedTile]
+
+    const tilesWithBonus = originalTilesWithBonus.map(replaceAkaDora)
+    const tiles = originalTiles.map(replaceAkaDora)
 
     const someIsHonor = tiles.some(tile => tileSuit(tile) === "z")
     const everyIsYaochu = tiles.every(isYaochu)
@@ -810,7 +827,7 @@ export function winningHand(state) {
     const chitoitsuForm = melds.pr.length === 7
 
     // limit hands
-    const 四暗刻 = closedPong.filter(t => t != pickedTile).length + closedKong.length === 4
+    const 四暗刻 = closedPong.filter(t => t !== pickedTile).length + closedKong.length === 4
     const 四暗刻単騎待ち = 四暗刻 && pickedTile === eyes
     defineYakuman("四暗刻単騎待ち", 四暗刻 && 四暗刻単騎待ち, 2)
     defineYakuman("四暗刻", 四暗刻 && !四暗刻単騎待ち)
@@ -886,9 +903,15 @@ export function winningHand(state) {
         && isYaochu(eyes)
     defineYaku("混全帯么九", isChanta && someIsHonor && !everyIsYaochu, 2, 1)
     defineYaku("純全帯么九", isChanta && !someIsHonor && !everyIsYaochu, 3, 2)
-    defineYaku("三暗刻", closedPong.filter(t => t != pickedTile).length + closedKong.length === 3, 2, 2)
+    defineYaku("三暗刻", closedPong.filter(t => t !== pickedTile).length + closedKong.length === 3, 2, 2)
     defineYaku("小三元", eyes != null && isDragonTile(eyes) && pong.filter(isDragonTile).length === 2, 2, 2)
     defineYaku("三槓子", closedKong.length + openKong.length === 3, 2, 2)
+
+    const countDora = tilesWithBonus
+        .map(t => dora.filter(d => d === t).length)
+        .reduce((x, y) => x + y, 0)
+    const countAkaDora = originalTiles.filter(t => isAkaDora(t)).length
+    const countNukiDora = hand.meldCalls.map(c => c.type === "bonus").length
 
     function calculateFu() {
         if (chitoitsuForm) return 25
@@ -950,8 +973,17 @@ export function winningHand(state) {
     } else {
         const fu = calculateFu()
         const fan = yaku.map(([_, f]) => f).reduce((x, y) => x + y, 0)
+            + countDora + countAkaDora + countNukiDora
         const basicPoints = calcBasicPoints(fu, fan)
-        return { yaku, fu, fan, basicPoints }
+        return {
+            yaku,
+            dora: countDora,
+            akaDora: countAkaDora,
+            nukiDora: countNukiDora,
+            fu,
+            fan,
+            basicPoints
+        }
     }
 }
 

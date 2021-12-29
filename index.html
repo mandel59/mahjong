@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>麻雀 役・聴牌判定器</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Input Siddhaṁ script using your ASCII keyboard.">
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <script type="module" src="app.js"></script>
+</head>
+
+<body>
+  <main class="container">
+    <nav>
+      <ul>
+        <li><h1>麻雀 役・聴牌判定器</h1></li>
+      </ul>
+      <ul>
+        <li><a href="https://github.com/mandel59/mahjong#readme">README</a></li>
+      </ul>
+    </nav>
+    <div class="grid">
+      <div>
+        <label>場風<select id="wind">
+            <option value="east">東</option>
+            <option value="south">南</option>
+            <option value="west">西</option>
+            <option value="north">北</option>
+          </select></label>
+        <label>自風<select id="player">
+            <option value="east">東</option>
+            <option value="south">南</option>
+            <option value="west">西</option>
+            <option value="north">北</option>
+          </select></label>
+        <label>立直 <input id="lizhi" type="checkbox" role="switch"></label>
+        <label>ツモ <input id="zimo" type="checkbox" role="switch"></label>
+        <label>手牌<input id="hand" type="text"></label>
+      </div>
+      <div>
+        <label>点数<div id="points"></div></label>
+        <label>役<ul id="hu"></ul></label>
+        <label>聴牌<ul id="tingpai"></ul></label>
+      </div>
+    </div>
+  </main>
+</body>
+
+</html>
