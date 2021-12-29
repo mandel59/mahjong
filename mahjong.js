@@ -586,7 +586,7 @@ export function* hu(hand) {
  * @returns {IterableIterator<[type: "hu"|"tingpai", melds: MeldsStruct]>}
  */
 export function* searchMelds(hand) {
-    const tiles = hand.pickedTile ? [hand.pickedTile, ...hand.handTiles] : hand.handTiles
+    const tiles = (hand.pickedTile ? [hand.pickedTile, ...hand.handTiles] : hand.handTiles).map(replaceAkaDora)
     if (isKokushimusou(tiles)) {
         if (hand.length === 14) {
             yield ["hu", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
