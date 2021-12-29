@@ -776,33 +776,6 @@ export function winningHand(state) {
         tiles.map(tileSuit)
             .filter(suit => suit !== "z" && suit !== "h")).size
 
-    const 国士無双 = isClosed
-        && everyIsYaochu
-        && new Set(tiles.filter(isYaochu)).size === 13
-    const 国士無双十三面待ち = 国士無双 && new Set(hand.handTiles.filter(isYaochu)).size === 13
-    defineYakuman("国士無双十三面待ち", 国士無双十三面待ち, 2)
-    defineYakuman("国士無双", 国士無双 && !国士無双十三面待ち)
-    defineYakuman("緑一色", tiles.every(tile => greens.has(tile)))
-    defineYakuman("清老頭", tiles.every(tile => routoupai.has(tile)))
-    defineYakuman("字一色", someIsHonor && suitCardinality === 0)
-    const 九連宝燈 = isClosed
-        && !someIsHonor
-        && suitCardinality === 1
-        && new Set(tiles).size === 9
-        && tiles.filter(tile => tile[0] === "1").length >= 3
-        && tiles.filter(tile => tile[0] === "9").length >= 3
-    const 純正九蓮宝燈 = 九連宝燈 && /^1112345678999[mps]$/.test(shortCode(lipai(hand.handTiles.map(replaceAkaDora))))
-    defineYakuman("純正九蓮宝燈", 純正九蓮宝燈, 2)
-    defineYakuman("九蓮宝燈", 九連宝燈 && !純正九蓮宝燈)
-
-    defineYaku("断么九", !tiles.some(isYaochu), 1, 1)
-    defineYaku("混老頭", everyIsYaochu, 2, 2)
-    defineYaku("混一色", someIsHonor && suitCardinality === 1, 3, 2)
-    defineYaku("清一色", !someIsHonor && suitCardinality === 1, 6, 5)
-
-    const chitoitsuForm = melds.pr.length === 7
-    defineYaku("七対子", chitoitsuForm && new Set(melds.pr).size === 7, 2, 0)
-
     const closedChow = melds.ch
     const openChow = hand.meldCalls
         .filter(c => c.type === "chow")
@@ -834,6 +807,8 @@ export function winningHand(state) {
         && !fanpai.has(eyes)
         && chow.some(chowTile => isRyanmenmachi(chowTile, pickedTile))
 
+    const chitoitsuForm = melds.pr.length === 7
+
     // limit hands
     const 四暗刻 = closedPong.length + closedKong.length === 4
     const 四暗刻単騎待ち = 四暗刻 && pickedTile === eyes
@@ -843,6 +818,29 @@ export function winningHand(state) {
     defineYakuman("大三元", pong.filter(isDragonTile).length === 3)
     defineYakuman("大四喜", pong.filter(isWindTile).length === 4, 2)
     defineYakuman("小四喜", eyes != null && isWindTile(eyes) && pong.filter(isWindTile).length === 3)
+    const 国士無双 = isClosed
+        && everyIsYaochu
+        && new Set(tiles.filter(isYaochu)).size === 13
+    const 国士無双十三面待ち = 国士無双 && new Set(hand.handTiles.filter(isYaochu)).size === 13
+    defineYakuman("国士無双十三面待ち", 国士無双十三面待ち, 2)
+    defineYakuman("国士無双", 国士無双 && !国士無双十三面待ち)
+    defineYakuman("緑一色", tiles.every(tile => greens.has(tile)))
+    defineYakuman("清老頭", tiles.every(tile => routoupai.has(tile)))
+    defineYakuman("字一色", someIsHonor && suitCardinality === 0)
+    const 九連宝燈 = isClosed
+        && !someIsHonor
+        && suitCardinality === 1
+        && new Set(tiles).size === 9
+        && tiles.filter(tile => tile[0] === "1").length >= 3
+        && tiles.filter(tile => tile[0] === "9").length >= 3
+    const 純正九蓮宝燈 = 九連宝燈 && /^1112345678999[mps]$/.test(shortCode(lipai(hand.handTiles.map(replaceAkaDora))))
+    defineYakuman("純正九蓮宝燈", 純正九蓮宝燈, 2)
+    defineYakuman("九蓮宝燈", 九連宝燈 && !純正九蓮宝燈)
+
+    defineYaku("立直", lizhi, 1, 0)
+    defineYaku("門前清自摸和", zimo && openChow.length + openPong.length + openKong.length === 0, 1, 0)
+    defineYaku("平和", pinghuForm, 1, 0)
+    defineYaku("七対子", chitoitsuForm, 2, 0)
 
     defineYaku("役牌白", pong.includes("5z"), 1, 1)
     defineYaku("役牌發", pong.includes("6z"), 1, 1)
@@ -850,9 +848,11 @@ export function winningHand(state) {
     defineYaku("場風牌", pong.includes(tileOfWind(wind)), 1, 1)
     defineYaku("自風牌", pong.includes(tileOfWind(player)), 1, 1)
 
-    defineYaku("立直", lizhi, 1, 0)
-    defineYaku("門前清自摸和", zimo && openChow.length + openPong.length + openKong.length === 0, 1, 0)
-    defineYaku("平和", pinghuForm, 1, 0)
+    defineYaku("断么九", !tiles.some(isYaochu), 1, 1)
+    defineYaku("混老頭", everyIsYaochu, 2, 2)
+    defineYaku("混一色", someIsHonor && suitCardinality === 1, 3, 2)
+    defineYaku("清一色", !someIsHonor && suitCardinality === 1, 6, 5)
+
     defineYaku("三色同順",
         Array.from("1234567")
             .some(n =>
