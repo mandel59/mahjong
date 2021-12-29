@@ -332,6 +332,8 @@ function isYaochu(tile) {
     return !simple && !bonus || simple && (num === 1 || num === 9)
 }
 
+const yaochuTiles = parseTileCode(japaneseMahjongTileCode).filter(isYaochu)
+
 /**
  * @param {Tile} tile 
  */
@@ -569,13 +571,6 @@ function isHu(count, melds) {
 }
 
 /**
- * @param {Tile[]} tiles 
- */
-function isKokushimusou(tiles) {
-    return new Set(tiles.filter(isYaochu)).size === 13
-}
-
-/**
  * @param {Hand} hand
  * @returns {IterableIterator<MeldsStruct>}
  * @typedef Hand
@@ -597,11 +592,16 @@ export function* hu(hand) {
  */
 export function* searchMelds(hand) {
     const tiles = (hand.pickedTile ? [hand.pickedTile, ...hand.handTiles] : hand.handTiles).map(replaceAkaDora)
-    if (isKokushimusou(tiles)) {
-        if (tiles.length === 14) {
-            yield ["hu", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
-        } else {
-            yield ["tingpai", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
+    if (tiles.filter(isYaochu).length >= 13) {
+        const uniqueYaochu = new Set(tiles.filter(isYaochu)).size
+        if (uniqueYaochu === 13) {
+            if (tiles.length === 14) {
+                yield ["hu", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
+            } else {
+                yield ["tingpai", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
+            }
+        } else if (uniqueYaochu === 12) {
+            yield ["tingpai", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [yaochuTiles.find(t => !tiles.includes(t))] }]
         }
     }
     for (const melds of uniqueMelds(tiles)) {
