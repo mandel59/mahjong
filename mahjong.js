@@ -683,7 +683,7 @@ export function* findAllMachi(melds, pickedTile) {
 
 /**
  * @param {MeldsStruct} melds
- * @returns {IterableIterator<Tile>}
+ * @returns {IterableIterator<[Tile, Tile]>}
  */
 export function* tingpaiTiles(melds) {
     const { pr, dz, qd, sg } = melds
@@ -693,36 +693,72 @@ export function* tingpaiTiles(melds) {
         if (pr[0] === pr[1]) {
             return
         }
-        yield* pr
+        const s = sg.length === 1 ? sg[0] : null
+        for (const t of pr) {
+            if (t !== s) {
+                yield [s, t]
+            }
+        }
         return
     }
     // 嵌張待ち
     if (qd.length === 1) {
         const num = tileNum(qd[0])
         const suit = tileSuit(qd[0])
-        yield `${num + 1}${suit}`
+        const s = sg.length === 1 ? sg[0] : null
+        const t = `${num + 1}${suit}`
+        if (t !== s) {
+            yield [s, t]
+        }
         return
     }
     if (dz.length === 1) {
         const num = tileNum(dz[0])
         const suit = tileSuit(dz[0])
+        const s = sg.length === 1 ? sg[0] : null
         // 辺張待ち（12）
         if (num === 1) {
-            yield `3${suit}`
+            const t = `3${suit}`
+            if (t !== s) {
+                yield [s, t]
+            }
             return
         }
         // 辺張待ち（89）
         if (num === 8) {
-            yield `7${suit}`
+            const t = `7${suit}`
+            if (t !== s) {
+                yield [s, t]
+            }
             return
         }
         // 両面待ち
-        yield `${num - 1}${suit}`
-        yield `${num + 2}${suit}`
+        {
+            const t = `${num - 1}${suit}`
+            if (t !== s) {
+                yield [s, t]
+            }
+        }
+        {
+            const t = `${num + 2}${suit}`
+            if (t !== s) {
+                yield [s, t]
+            }
+        }
         return
     }
     // 単騎待ち
-    yield* sg
+    if (sg.length === 2) {
+        if (sg[0] === sg[1]) {
+            return
+        }
+        yield [sg[0], sg[1]]
+        yield [sg[1], sg[0]]
+        return
+    }
+    if (sg.length === 1) {
+        yield [null, sg[0]]
+    }
 }
 
 /**

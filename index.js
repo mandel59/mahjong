@@ -72,7 +72,7 @@ for (const hand of hands) {
     const tingpai = new Set()
     for (const melds of tingpaiMelds) {
         const s = new Set()
-        for (const tile of tingpaiTiles(melds)) {
+        for (const [_, tile] of tingpaiTiles(melds)) {
             tingpai.add(tile)
         }
     }

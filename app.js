@@ -1,4 +1,10 @@
-import { parseShortCode, searchMelds, tingpaiTiles, winningHand, meldCall, lipai } from "./mahjong.js"
+import {
+  parseShortCode,
+  searchMelds,
+  tingpaiTiles,
+  winningHand,
+  compareJapaneseMahjongTileOrder,
+} from "./mahjong.js"
 
 window.addEventListener("DOMContentLoaded", () => {
   for (const id of ["player", "wind", "hand", "lizhi", "zimo"]) {
@@ -38,12 +44,18 @@ function update() {
   const allMelds = Array.from(searchMelds(hand))
   const huMelds = allMelds.filter(([type, _]) => type === "hu").map(([_, melds]) => melds)
   const tingpaiMelds = allMelds.filter(([type, _]) => type === "tingpai").map(([_, melds]) => melds)
-  const tingpai = new Set()
-  for (const melds of tingpaiMelds) {
-    for (const tile of tingpaiTiles(melds)) {
-      tingpai.add(tile)
+  function getUniqueTingpaiReplacements() {
+    const tingpai = new Map()
+    for (const melds of tingpaiMelds) {
+      for (const r of tingpaiTiles(melds)) {
+        const [s, t] = r
+        tingpai.set(`${s}-${t}`, r)
+      }
     }
+    return Array.from(tingpai.values())
+      .sort((x, y) => compareJapaneseMahjongTileOrder(x[0], y[0]))
   }
+  const tingpai = getUniqueTingpaiReplacements()
   const huHands = huMelds.map(melds => {
     const state = {
       hand,
@@ -66,7 +78,7 @@ function update() {
     zimo,
     hu,
     huHands,
-    tingpai: lipai(Array.from(tingpai))
+    tingpai,
   })
   const pointsArea = document.getElementById("points")
   const huList = document.getElementById("hu")
@@ -104,9 +116,13 @@ function update() {
     }
     pointsArea.textContent = `${["", "二倍", "三倍", "四倍", "五倍", "六倍", "七倍"][hu.bai - 1]}役満 基本点${hu.basicPoints}点`
   }
-  for (const t of lipai(Array.from(tingpai))) {
+  for (const [s, t] of tingpai) {
     const li = document.createElement("li")
-    li.textContent = t
+    if (s == null) {
+      li.textContent = t
+    } else {
+      li.textContent = `${s} → ${t}`
+    }
     tingpaiList.appendChild(li)
   }
 }
