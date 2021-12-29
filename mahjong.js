@@ -531,28 +531,30 @@ function countMelds(hand, melds) {
 
 /**
  * @param {MeldsCount} count
+ * @param {MeldsStruct} melds
  * @returns {boolean}
  */
-function isTingpai(count) {
+function isTingpai(count, melds) {
     const { chow, pong, pair, dazi } = count
     const triad = chow + pong
     const tingpaiRegular
         = triad === 4 && pair === 0 && dazi === 0
         || triad === 3 && pair + dazi === 2 && pair >= 1
     const tingpaiQiduizi
-        = triad === 0 && pair === 6 && dazi === 0
+        = triad === 0 && pair === 6 && dazi === 0 && new Set([...melds.pr, ...melds.sg]).size === 7
     return tingpaiRegular || tingpaiQiduizi
 }
 
 /**
  * @param {MeldsCount} count
+ * @param {MeldsStruct} melds
  * @returns {boolean}
  */
-function isHu(count) {
+function isHu(count, melds) {
     const { chow, pong, pair, dazi } = count
     const triad = chow + pong
     const huRegular = triad === 4 && pair === 1 && dazi === 0
-    const huQiduizi = triad === 0 && pair === 7 && dazi === 0
+    const huQiduizi = triad === 0 && pair === 7 && dazi === 0 && new Set(melds.pr).size === 7
     return huRegular || huQiduizi
 }
 
@@ -594,10 +596,10 @@ export function* searchMelds(hand) {
     }
     for (const melds of uniqueMelds(tiles)) {
         const count = countMelds(hand, melds)
-        if (isHu(count)) {
+        if (isHu(count, melds)) {
             yield ["hu", melds]
         }
-        if (isTingpai(count)) {
+        if (isTingpai(count, melds)) {
             yield ["tingpai", melds]
         }
     }
