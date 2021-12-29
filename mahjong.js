@@ -810,7 +810,7 @@ export function winningHand(state) {
     const chitoitsuForm = melds.pr.length === 7
 
     // limit hands
-    const 四暗刻 = closedPong.length + closedKong.length === 4
+    const 四暗刻 = closedPong.filter(t => t != pickedTile).length + closedKong.length === 4
     const 四暗刻単騎待ち = 四暗刻 && pickedTile === eyes
     defineYakuman("四暗刻単騎待ち", 四暗刻 && 四暗刻単騎待ち, 2)
     defineYakuman("四暗刻", 四暗刻 && !四暗刻単騎待ち)
@@ -886,7 +886,7 @@ export function winningHand(state) {
         && isYaochu(eyes)
     defineYaku("混全帯么九", isChanta && someIsHonor && !everyIsYaochu, 2, 1)
     defineYaku("純全帯么九", isChanta && !someIsHonor && !everyIsYaochu, 3, 2)
-    defineYaku("三暗刻", closedPong.length + closedKong.length === 3, 2, 2)
+    defineYaku("三暗刻", closedPong.filter(t => t != pickedTile).length + closedKong.length === 3, 2, 2)
     defineYaku("小三元", eyes != null && isDragonTile(eyes) && pong.filter(isDragonTile).length === 2, 2, 2)
     defineYaku("三槓子", closedKong.length + openKong.length === 3, 2, 2)
 
