@@ -598,7 +598,7 @@ export function* hu(hand) {
 export function* searchMelds(hand) {
     const tiles = (hand.pickedTile ? [hand.pickedTile, ...hand.handTiles] : hand.handTiles).map(replaceAkaDora)
     if (isKokushimusou(tiles)) {
-        if (hand.length === 14) {
+        if (tiles.length === 14) {
             yield ["hu", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
         } else {
             yield ["tingpai", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
