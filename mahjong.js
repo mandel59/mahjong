@@ -596,12 +596,15 @@ export function* searchMelds(hand) {
         const uniqueYaochu = new Set(tiles.filter(isYaochu)).size
         if (uniqueYaochu === 13) {
             if (tiles.length === 14) {
-                yield ["hu", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
+                if (tiles.filter(isYaochu).length === 14) {
+                    yield ["hu", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
+                }
+                yield ["tingpai", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
             } else {
                 yield ["tingpai", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
             }
         } else if (uniqueYaochu === 12) {
-            yield ["tingpai", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [yaochuTiles.find(t => !tiles.includes(t))] }]
+            yield ["tingpai", { ch: [], pg: [], pr: [], dz: [], qd: [], sg: [...tiles] }]
         }
     }
     for (const melds of uniqueMelds(tiles)) {
@@ -758,6 +761,50 @@ export function* tingpaiTiles(melds) {
     }
     if (sg.length === 1) {
         yield [null, sg[0]]
+    }
+    // 国士無双の待ち
+    const uniqueYaochu = new Set(sg.filter(isYaochu)).size
+    if (uniqueYaochu === 13) {
+        if (sg.filter(isYaochu).length === 14) {
+            /** @type {Map<string, number>} */
+            const m = new Map()
+            for (const s of sg) {
+                m.set(s, (m.get(s) ?? 0) + 1)
+            }
+            const s = Array.from(m.entries()).find(e => e[1] === 2)[0]
+            for (const t of yaochuTiles) {
+                if (t !== s) {
+                    yield [s, t]
+                }
+            }
+            return
+        } else {
+            const s = sg.find(t => !isYaochu(t)) ?? null
+            for (const t of yaochuTiles) {
+                if (t !== s) {
+                    yield [s, t]
+                }
+            }
+            return
+        }
+    } else if (uniqueYaochu === 12) {
+        /** @type {Map<string, number>} */
+        const m = new Map()
+        for (const s of sg) {
+            m.set(s, (m.get(s) ?? 0) + 1)
+        }
+        const s = Array.from(m.entries()).find(e => e[1] === 3)?.[0]
+            ?? sg.find(t => !isYaochu(t))
+            ?? null
+        for (const t of yaochuTiles) {
+            if (sg.includes(t)) {
+                continue
+            }
+            if (t !== s) {
+                yield [s, t]
+            }
+        }
+        return
     }
 }
 
