@@ -53,6 +53,7 @@ function update() {
       }
     }
     return Array.from(tingpai.values())
+      .sort((x, y) => compareJapaneseMahjongTileOrder(x[1], y[1]))
       .sort((x, y) => compareJapaneseMahjongTileOrder(x[0], y[0]))
   }
   const tingpai = getUniqueTingpaiReplacements()
