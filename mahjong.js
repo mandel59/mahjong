@@ -944,8 +944,9 @@ export function winningHand(state) {
     }
 
     if (yakuman.length > 0) {
-        const basicPoints = 8000 * yakuman.map(([_, bai]) => bai).reduce((x, y) => x + y, 0)
-        return { yakuman, basicPoints }
+        const bai = yakuman.map(([_, bai]) => bai).reduce((x, y) => x + y, 0)
+        const basicPoints = 8000 * bai
+        return { yakuman, bai, basicPoints }
     } else {
         const fu = calculateFu()
         const fan = yaku.map(([_, f]) => f).reduce((x, y) => x + y, 0)
