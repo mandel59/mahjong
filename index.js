@@ -76,6 +76,13 @@ for (const hand of hands) {
             tingpai.add(tile)
         }
     }
+    const state = {
+        hand,
+        wind,
+        player,
+        lizhi,
+        zimo,
+    }
     console.log(JSON.stringify({
         hand,
         wind,
@@ -83,15 +90,7 @@ for (const hand of hands) {
         lizhi,
         zimo,
         hu: huMelds.map(melds => {
-            const state = {
-                hand,
-                melds,
-                wind,
-                player,
-                lizhi,
-                zimo,
-            }
-            return winningHand(state)
+            return winningHand(melds, state)
         }),
         tingpai: lipai(Array.from(tingpai))
     }))

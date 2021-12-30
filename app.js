@@ -57,16 +57,15 @@ function update() {
       .sort((x, y) => compareJapaneseMahjongTileOrder(x[0], y[0]))
   }
   const tingpai = getUniqueTingpaiReplacements()
+  const state = {
+    hand,
+    wind,
+    player,
+    lizhi,
+    zimo,
+  }
   const huHands = huMelds.map(melds => {
-    const state = {
-      hand,
-      melds,
-      wind,
-      player,
-      lizhi,
-      zimo,
-    }
-    return { ...winningHand(state), melds }
+    return { ...winningHand(melds, state), melds }
   })
   huHands.sort((x, y) => y.fan - x.fan)
   huHands.sort((x, y) => y.basicPoints - x.basicPoints)

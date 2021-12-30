@@ -826,7 +826,6 @@ export function* tingpaiTiles(melds, hand) {
 /**
  * @typedef MahjongState
  * @property {Hand} hand
- * @property {MeldsStruct} melds
  * @property {Wind} wind
  * @property {Wind} player
  * @property {boolean} lizhi
@@ -851,10 +850,11 @@ export function tilesInHand(hand) {
 }
 
 /**
+ * @param {MeldsStruct} melds
  * @param {MahjongState} state
  */
-export function winningHand(state) {
-    const { hand, melds, wind, player, lizhi, zimo, dora = [] } = state
+export function winningHand(melds, state) {
+    const { hand, wind, player, lizhi, zimo, dora = [] } = state
     const isClosed = hand.handTiles.length === 13
 
     /** @type {[name: string, bai: number][]} */
