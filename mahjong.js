@@ -1145,6 +1145,8 @@ export async function evaluateMahjongState(state, returnsOption = {}) {
         const huHands = huMelds.map(melds => {
             return { ...winningHand(melds, state), melds }
         })
+        huHands.sort((x, y) => y.fan - x.fan)
+        huHands.sort((x, y) => y.basicPoints - x.basicPoints)
         const hu = huHands[0]
         return hu
     }
