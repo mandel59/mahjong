@@ -852,6 +852,17 @@ export function tilesInHand(hand) {
 /**
  * @param {MeldsStruct} melds
  * @param {MahjongState} state
+ * @returns {WinningHand}
+ * @typedef WinningHand
+ * @property {[name: string, bai: number][]} [yakuman]
+ * @property {number} [bai]
+ * @property {[name: string, fan: number]} [yaku]
+ * @property {number} [dora]
+ * @property {number} [akaDora]
+ * @property {number} [nukiDora]
+ * @property {number} [hu]
+ * @property {number} [fan]
+ * @property {number} basicPoints
  */
 export function winningHand(melds, state) {
     const { hand, wind, player, lizhi, zimo, dora = [] } = state
@@ -1113,4 +1124,65 @@ export function calcBasicPoints(fu, fan) {
     if (fan >= 8) return 4000
     if (fan >= 6) return 3000
     return Math.min(fu * 2 ** (2 + fan), 2000)
+}
+
+/**
+ * @param {MahjongState} state
+ * @param {object} returnsOption
+ * @param {boolean} [returnsOption.hu]
+ * @param {boolean} [returnsOption.tingpai]
+ */
+export async function evaluateMahjongState(state, returnsOption = {}) {
+    const {
+        hu: returnHu = true,
+        tingpai: returnTingpai = true,
+    } = returnsOption
+    const { hand } = state
+    const allMelds = Array.from(searchMelds(hand))
+    // hu
+    function calcHu() {
+        const huMelds = allMelds.filter(([type, _]) => type === "hu").map(([_, melds]) => melds)
+        const huHands = huMelds.map(melds => {
+            return { ...winningHand(melds, state), melds }
+        })
+        const hu = huHands[0]
+        return hu
+    }
+    const hu = returnHu ? calcHu() : null
+    // tingpai
+    function calcTingpai() {
+        const tingpaiMelds = allMelds.filter(([type, _]) => type === "tingpai").map(([_, melds]) => melds)
+        function getUniqueTingpaiReplacements() {
+            const tingpai = new Map()
+            for (const melds of tingpaiMelds) {
+                for (const r of tingpaiTiles(melds, hand)) {
+                    const [s, t] = r
+                    tingpai.set(`${s}-${t}`, r)
+                }
+            }
+            return Array.from(tingpai.values())
+                .sort((x, y) => compareJapaneseMahjongTileOrder(x[1], y[1]))
+                .sort((x, y) => compareJapaneseMahjongTileOrder(x[0], y[0]))
+        }
+        const tingpai = getUniqueTingpaiReplacements()
+        return tingpai
+    }
+    const tingpai = returnTingpai ? calcTingpai() : null
+    return {
+        hu,
+        tingpai,
+    }
+}
+
+/**
+ * @param {Tile} s
+ * @param {Tile[]} tiles
+ */
+export function discardTile(s, tiles) {
+    const ss = replaceAkaDora(s)
+    const i = tiles.findIndex((x) => replaceAkaDora(x) === ss)
+    if (i >= 0) {
+        return [...tiles.slice(0, i), ...tiles.slice(i + 1)]
+    }
+    throw new Error()
 }

@@ -1,9 +1,7 @@
 import {
   parseShortCode,
-  searchMelds,
-  tingpaiTiles,
-  winningHand,
-  compareJapaneseMahjongTileOrder,
+  evaluateMahjongState,
+  discardTile,
 } from "./mahjong.js"
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -13,7 +11,7 @@ window.addEventListener("DOMContentLoaded", () => {
   update()
 })
 
-function update() {
+async function update() {
   const player = /** @type {HTMLSelectElement | null} */ (document.getElementById("player"))?.value || "east"
   const wind = /** @type {HTMLSelectElement | null} */ (document.getElementById("wind"))?.value || "east"
   const lizhi = /** @type {HTMLInputElement | null} */ (document.getElementById("lizhi"))?.checked
@@ -41,22 +39,6 @@ function update() {
     meldCalls: [],
     pickedTile: tiles[13],
   }
-  const allMelds = Array.from(searchMelds(hand))
-  const huMelds = allMelds.filter(([type, _]) => type === "hu").map(([_, melds]) => melds)
-  const tingpaiMelds = allMelds.filter(([type, _]) => type === "tingpai").map(([_, melds]) => melds)
-  function getUniqueTingpaiReplacements() {
-    const tingpai = new Map()
-    for (const melds of tingpaiMelds) {
-      for (const r of tingpaiTiles(melds, hand)) {
-        const [s, t] = r
-        tingpai.set(`${s}-${t}`, r)
-      }
-    }
-    return Array.from(tingpai.values())
-      .sort((x, y) => compareJapaneseMahjongTileOrder(x[1], y[1]))
-      .sort((x, y) => compareJapaneseMahjongTileOrder(x[0], y[0]))
-  }
-  const tingpai = getUniqueTingpaiReplacements()
   const state = {
     hand,
     wind,
@@ -64,22 +46,10 @@ function update() {
     lizhi,
     zimo,
   }
-  const huHands = huMelds.map(melds => {
-    return { ...winningHand(melds, state), melds }
+  await new Promise(resolve => {
+    setImmediate(() => resolve())
   })
-  huHands.sort((x, y) => y.fan - x.fan)
-  huHands.sort((x, y) => y.basicPoints - x.basicPoints)
-  const hu = huHands[0]
-  console.log({
-    hand,
-    wind,
-    player,
-    lizhi,
-    zimo,
-    hu,
-    huHands,
-    tingpai,
-  })
+  const { hu, tingpai } = await evaluateMahjongState(state)
   const pointsArea = document.getElementById("points")
   const huList = document.getElementById("hu")
   const tingpaiList = document.getElementById("tingpai")
@@ -117,12 +87,33 @@ function update() {
     pointsArea.textContent = `${["", "二倍", "三倍", "四倍", "五倍", "六倍", "七倍"][hu.bai - 1]}役満 基本点${hu.basicPoints}点`
   }
   for (const [s, t] of tingpai) {
-    const li = document.createElement("li")
-    if (s == null) {
-      li.textContent = t
-    } else {
-      li.textContent = `${s} → ${t}`
+    const hand2 = {
+      ...hand,
+      handTiles: s != null ? discardTile(s, [...hand.handTiles, hand.pickedTile]) : hand.handTiles,
+      pickedTile: t
     }
+    const state2 = {
+      hand: hand2,
+      wind,
+      player,
+      lizhi,
+      zimo,
+    }
+    const li = document.createElement("li")
+    const t0 = document.createTextNode(
+      s == null ? `${t} [基本点 ` : `${s} → ${t} [基本点 `
+    )
+    const t1 = document.createTextNode("***")
+    const t2 = document.createTextNode("点]")
+    for (const t of [t0, t1, t2]) {
+      li.appendChild(t)
+    }
+    new Promise(resolve => {
+      setImmediate(() => resolve())
+    }).then(() => evaluateMahjongState(state2, { tingpai: false }))
+      .then(({ hu }) => {
+        t1.nodeValue = `${hu.basicPoints}`
+      })
     tingpaiList.appendChild(li)
   }
 }
