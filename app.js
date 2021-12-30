@@ -77,14 +77,14 @@ async function update() {
       li.textContent = `抜きドラ ${hu.nukiDora}`
       huList.appendChild(li)
     }
-    pointsArea.textContent = `${hu.fu}符${hu.fan}飜 基本点${hu.basicPoints}点`
+    pointsArea.textContent = `${hu.fu}符${hu.fan}飜 基本点 ${hu.basicPoints}点`
   } else if (hu?.yakuman) {
     for (const [name, _] of hu.yakuman) {
       const li = document.createElement("li")
       li.textContent = name
       huList.appendChild(li)
     }
-    pointsArea.textContent = `${["", "二倍", "三倍", "四倍", "五倍", "六倍", "七倍"][hu.bai - 1]}役満 基本点${hu.basicPoints}点`
+    pointsArea.textContent = `${["", "二倍", "三倍", "四倍", "五倍", "六倍", "七倍"][hu.bai - 1]}役満 基本点 ${hu.basicPoints}点`
   }
   for (const [s, t] of tingpai) {
     const hand2 = {
