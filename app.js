@@ -1,5 +1,5 @@
 import {
-  parseShortCode,
+  parseHandCode,
   evaluateMahjongState,
   discardTile,
 } from "./mahjong.js"
@@ -21,24 +21,14 @@ async function update() {
     const i = "東南西北白發中".indexOf(c)
     return `${i + 1}z`
   }).replace(/\s/g, "")
-  let tiles
+  let hand
   try {
-    tiles = parseShortCode(handCode)
-    if (tiles.length < 13 || tiles.length > 14) throw new Error()
+    hand = parseHandCode(handCode)
   } catch {
     document.getElementById("hand")?.setAttribute("aria-invalid", "true")
     return
   }
   document.getElementById("hand")?.setAttribute("aria-invalid", "false")
-  const hand = tiles.length === 13 ? {
-    handTiles: tiles,
-    meldCalls: [],
-    pickedTile: null,
-  } : {
-    handTiles: tiles.slice(0, 13),
-    meldCalls: [],
-    pickedTile: tiles[13],
-  }
   const state = {
     hand,
     wind,

@@ -118,6 +118,68 @@ export function parseShortCode(s) {
 }
 
 /**
+ * @param {string} s
+ * @returns {MeldCall}
+ */
+export function parseMeldCallCode(s) {
+    const re = /^(?:(?:[<^>]\+?)?[0-9][mpszh]?)*(?:(?:[<^>]\+?)?[0-9])[mpszh]$/
+    if (!re.test(s)) throw new RangeError()
+    const tiles = parseShortCode(s.replace(/[<^>\+]/g, ""))
+    const meldType
+        = tiles.length === 1
+            ? "bonus"
+            : tiles.length === 4
+                ? "kong"
+                : tiles[0] === tiles[1]
+                    ? "pong"
+                    : "chow"
+    const suit = s.charAt(s.length - 1)
+    const m = Array.from(s.matchAll(/([<^>])(\+?)([0-9])/g))
+    if (m.length > 1) throw new RangeError()
+    const discarder
+        = m.length === 0
+            ? "self"
+            : m[0][1] === "<"
+                ? "top"
+                : m[0][1] === ">"
+                    ? "bottom"
+                    : "opponent"
+    const shominkan = m.length === 1 && m[0][2] === "+"
+    const discarded = m.length === 0 ? null : `${m[0][3]}${suit}`
+    return meldCall(meldType, tiles, discarder, discarded, shominkan)
+}
+
+/**
+ * 
+ * @param {string} s
+ * @returns {Hand}
+ */
+export function parseHandCode(s) {
+    const re = /[^\[\]]+|\[[^\[\]]+\]/y
+    /** @type {Hand} */
+    const hand = {
+        handTiles: [],
+        meldCalls: [],
+        pickedTile: null,
+    }
+    while (re.lastIndex !== s.length) {
+        const m = re.exec(s)
+        if (!m) throw new Error()
+        if (m[0].charAt(0) === "[") {
+            const meldCall = parseMeldCallCode(m[0].substring(1, m[0].length - 1))
+            hand.meldCalls.push(meldCall)
+        } else {
+            const handTiles = parseShortCode(m[0])
+            hand.handTiles.push(...handTiles)
+        }
+    }
+    if (countTilesInHand(hand) === 14) {
+        hand.pickedTile = hand.handTiles.pop()
+    }
+    return hand
+}
+
+/**
  * @param {Tile[]} tiles
  * @returns {Tile[]}
  */
@@ -169,14 +231,15 @@ export function countEachTiles(tiles) {
 /**
  * @typedef MeldCall
  * @property {MeldType} type
+ * @property {boolean} shominkan 小明槓
  * @property {Tile[]} tiles the tiles of the meld
  * @property {Tile} smallest the smallest tile of the meld
  * @property {RelativePlayer} discarder
  *  the player who discarded the tile,
  *  or `"self"` if the call is closed kong or bonus
- * @property {Tile} discarded
+ * @property {Tile | null} discarded
  *  the discarded tile,
- *  or the tile of meld if the call is closed kong or bonus
+ *  or `null` if the discarder is `"self"`
  */
 
 /**
@@ -193,30 +256,38 @@ export function countEachTiles(tiles) {
  * @param {string | Tile[]} tiles
  * @param {RelativePlayer} discarder
  * @param {Tile} discarded
+ * @param {boolean} [shominkan=false]
  * @returns {MeldCall}
  */
-export function meldCall(type, tiles, discarder, discarded) {
+export function meldCall(type, tiles, discarder, discarded, shominkan = false) {
+    if (type !== "kong" && shominkan) throw new TypeError()
     const tilesArray = typeof tiles === "string" ? parseShortCode(tiles) : [...tiles]
-    if (!tilesArray.includes(discarded)) throw new RangeError()
+    if (discarder === "self" && discarded != null) throw new RangeError()
+    if (discarder !== "self" && discarded == null) throw new RangeError()
+    if (discarded != null && !tilesArray.includes(discarded)) throw new RangeError()
     const face = lipai(tilesArray.map(replaceAkaDora))
-    validateMeldCall(type, face)
+    validateMeldCall(type, face, discarder)
     const smallest = face[0]
     return {
         type,
+        shominkan,
         tiles: tilesArray,
         smallest,
         discarder,
-        discarded,
+        discarded: discarded ?? null,
     }
 }
 
 /**
  * @param {MeldType} type
  * @param {Tile[]} tiles
+ * @param {RelativePlayer} discarder
  */
-function validateMeldCall(type, tiles) {
+function validateMeldCall(type, tiles, discarder) {
     if (type === "bonus") {
         if (tiles.length !== 1) throw new RangeError()
+        if (!(tiles[0] === "4z" || tileSuit(tiles[0]) === "h")) throw new RangeError()
+        if (discarder !== "self") throw new RangeError()
     } else if (type === "chow") {
         if (tiles.length !== 3) throw new RangeError()
         const suits = tiles.map(tileSuit)
@@ -224,9 +295,11 @@ function validateMeldCall(type, tiles) {
         if (!(suits[0] === "m" || suits[0] === "s" || suits[0] === "p")) throw new RangeError()
         if (!(suits[0] === suits[1] && suits[0] === suits[2])) throw new RangeError()
         if (!(nums[0] + 1 === nums[1] && nums[0] + 2 === nums[2])) throw new RangeError()
+        if (discarder === "self") throw new RangeError()
     } else if (type === "pong") {
         if (tiles.length !== 3) throw new RangeError()
         if (!(tiles[0] === tiles[1] && tiles[0] === tiles[2])) throw new RangeError()
+        if (discarder === "self") throw new RangeError()
     } else if (type === "kong") {
         if (tiles.length !== 4) throw new RangeError()
         if (!(tiles[0] === tiles[1]
@@ -844,9 +917,23 @@ export function tilesInHand(hand) {
             .filter(c => c.type !== "bonus")
             .map(c => c.tiles)
             .flat(),
-        hand.pickedTile]
+        ...hand.pickedTile ? [hand.pickedTile] : []]
         .map(replaceAkaDora)
     return tiles
+}
+
+/**
+ * @param {Hand} hand
+ */
+export function countTilesInHand(hand) {
+    const count
+        = hand.handTiles.length
+            + hand.meldCalls.map(c => {
+                if (c.type === "bonus") return 0
+                return 3
+            }).reduce((x, y) => x + y, 0)
+            + (hand.pickedTile ? 1 : 0)
+    return count
 }
 
 /**
