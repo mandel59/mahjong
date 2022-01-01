@@ -1201,7 +1201,7 @@ export function winningHand(melds, state) {
             nukiDora: countNukiDora,
             uraDora: countUraDora,
             fu,
-            fan,
+            fan: fan + doraFan,
             basicPoints
         }
     }
