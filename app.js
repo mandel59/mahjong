@@ -17,10 +17,13 @@ async function update() {
   const lizhi = /** @type {HTMLInputElement | null} */ (document.getElementById("lizhi"))?.checked
   const zimo = /** @type {HTMLInputElement | null} */ (document.getElementById("zimo"))?.checked
   const handTiles = /** @type {HTMLInputElement | null} */ (document.getElementById("hand"))?.value || ""
-  const handCode = handTiles.replace(/[東南西北白發中]/g, (c) => {
-    const i = "東南西北白發中".indexOf(c)
-    return `${i + 1}z`
-  }).replace(/\s/g, "")
+  const handCode = handTiles
+    .replace(/\s/g, "")
+    .replace(/[東南西北白發中]/g, (c) => {
+      const i = "東南西北白發中".indexOf(c)
+      return `${i + 1}z`
+    })
+    .replace(/5r/g, "0")
   let hand
   try {
     hand = parseHandCode(handCode)
