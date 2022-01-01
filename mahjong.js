@@ -1123,7 +1123,7 @@ export function winningHand(melds, state) {
         .map(t => dora.filter(d => d === t).length)
         .reduce((x, y) => x + y, 0)
     const countAkaDora = originalTiles.filter(t => isAkaDora(t)).length
-    const countNukiDora = hand.meldCalls.map(c => c.type === "bonus").length
+    const countNukiDora = hand.meldCalls.filter(c => c.type === "bonus").length
 
     function calculateFu() {
         if (chitoitsuForm) return 25
