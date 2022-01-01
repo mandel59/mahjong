@@ -127,11 +127,8 @@ async function update() {
         pickedTile: t
       }
       const state2 = {
+        ...state,
         hand: hand2,
-        wind,
-        player,
-        lizhi,
-        zimo,
       }
       const li = document.createElement("li")
       const t0 = document.createTextNode(
