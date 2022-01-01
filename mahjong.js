@@ -928,11 +928,11 @@ export function tilesInHand(hand) {
 export function countTilesInHand(hand) {
     const count
         = hand.handTiles.length
-            + hand.meldCalls.map(c => {
-                if (c.type === "bonus") return 0
-                return 3
-            }).reduce((x, y) => x + y, 0)
-            + (hand.pickedTile ? 1 : 0)
+        + hand.meldCalls.map(c => {
+            if (c.type === "bonus") return 0
+            return 3
+        }).reduce((x, y) => x + y, 0)
+        + (hand.pickedTile ? 1 : 0)
     return count
 }
 
@@ -1185,8 +1185,8 @@ export function winningHand(melds, state) {
     } else {
         const fu = calculateFu()
         const fan = yaku.map(([_, f]) => f).reduce((x, y) => x + y, 0)
-            + countDora + countAkaDora + countNukiDora
-        const basicPoints = calcBasicPoints(fu, fan)
+        const doraFan = countDora + countAkaDora + countNukiDora
+        const basicPoints = calcBasicPoints(fu, fan, doraFan)
         return {
             yaku,
             dora: countDora,
@@ -1203,9 +1203,11 @@ export function winningHand(melds, state) {
  * 
  * @param {number} fu
  * @param {number} fan
+ * @param {number} doraFan
  */
-export function calcBasicPoints(fu, fan) {
+export function calcBasicPoints(fu, fan, doraFan) {
     if (fan === 0) return 0
+    fan += doraFan
     if (fan >= 13) return 8000
     if (fan >= 11) return 6000
     if (fan >= 8) return 4000

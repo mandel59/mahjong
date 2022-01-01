@@ -67,7 +67,11 @@ async function update() {
       li.textContent = `抜きドラ ${hu.nukiDora}`
       huList.appendChild(li)
     }
-    pointsArea.textContent = `${hu.fu}符${hu.fan}飜 基本点 ${hu.basicPoints}点`
+    if (hu.basicPoints === 0) {
+      pointsArea.textContent = `無役 基本点 ${hu.basicPoints}点`
+    } else {
+      pointsArea.textContent = `${hu.fu}符${hu.fan}飜 基本点 ${hu.basicPoints}点`
+    }
   } else if (hu?.yakuman) {
     for (const [name, _] of hu.yakuman) {
       const li = document.createElement("li")
