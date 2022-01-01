@@ -102,6 +102,11 @@ async function update() {
         li.textContent = `抜きドラ ${hu.nukiDora}`
         huList.appendChild(li)
       }
+      if (hu.uraDora) {
+        const li = document.createElement("li")
+        li.textContent = `裏ドラ ${hu.uraDora}`
+        huList.appendChild(li)
+      }
       if (hu.basicPoints === 0) {
         pointsArea.textContent = `無役 基本点 ${hu.basicPoints}点`
       } else {

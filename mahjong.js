@@ -1126,9 +1126,11 @@ export function winningHand(melds, state) {
         .reduce((x, y) => x + y, 0)
     const countAkaDora = originalTiles.filter(t => isAkaDora(t)).length
     const countNukiDora = hand.meldCalls.filter(c => c.type === "bonus").length
-    const countUraDora = tilesWithBonus
-        .map(t => uraDora.filter(d => d === t).length)
-        .reduce((x, y) => x + y, 0)
+    const countUraDora = lizhi
+        ? tilesWithBonus
+            .map(t => uraDora.filter(d => d === t).length)
+            .reduce((x, y) => x + y, 0)
+        : 0
 
     function calculateFu() {
         if (chitoitsuForm) return 25
