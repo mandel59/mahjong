@@ -903,8 +903,9 @@ export function* tingpaiTiles(melds, hand) {
  * @property {Wind} player
  * @property {boolean} lizhi
  * @property {boolean} zimo
- * @property {Tile[]} dora
- */
+ * @property {Tile[]} [dora]
+ * @property {Tile[]} [uraDora]
+*/
 
 /**
  * @param {Hand} hand
@@ -947,12 +948,13 @@ export function countTilesInHand(hand) {
  * @property {number} [dora]
  * @property {number} [akaDora]
  * @property {number} [nukiDora]
+ * @property {number} [uraDora]
  * @property {number} [hu]
  * @property {number} [fan]
  * @property {number} basicPoints
  */
 export function winningHand(melds, state) {
-    const { hand, wind, player, lizhi, zimo, dora = [] } = state
+    const { hand, wind, player, lizhi, zimo, dora = [], uraDora = [] } = state
     const isClosed = hand.handTiles.length === 13
 
     /** @type {[name: string, bai: number][]} */
@@ -1124,6 +1126,9 @@ export function winningHand(melds, state) {
         .reduce((x, y) => x + y, 0)
     const countAkaDora = originalTiles.filter(t => isAkaDora(t)).length
     const countNukiDora = hand.meldCalls.filter(c => c.type === "bonus").length
+    const countUraDora = tilesWithBonus
+        .map(t => uraDora.filter(d => d === t).length)
+        .reduce((x, y) => x + y, 0)
 
     function calculateFu() {
         if (chitoitsuForm) return 25
@@ -1192,6 +1197,7 @@ export function winningHand(melds, state) {
             dora: countDora,
             akaDora: countAkaDora,
             nukiDora: countNukiDora,
+            uraDora: countUraDora,
             fu,
             fan,
             basicPoints

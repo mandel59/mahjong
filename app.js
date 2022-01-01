@@ -2,14 +2,33 @@ import {
   parseHandCode,
   evaluateMahjongState,
   discardTile,
+  parseShortCode,
 } from "./mahjong.js"
 
 window.addEventListener("DOMContentLoaded", () => {
-  for (const id of ["player", "wind", "hand", "lizhi", "zimo"]) {
+  for (const id of ["player", "wind", "dora", "uradora", "hand", "lizhi", "zimo"]) {
     document.getElementById(id)?.addEventListener("input", () => update())
   }
   update()
 })
+
+/**
+ * @template T
+ * @param {() => T} callback
+ * @param {(error: any) => T} [expect]
+ * @returns {T}
+ */
+function tryCall(callback, expect) {
+  try {
+    return callback()
+  } catch (error) {
+    if (expect) {
+      return expect(error)
+    } else {
+      throw error
+    }
+  }
+}
 
 async function update() {
   const player = /** @type {HTMLSelectElement | null} */ (document.getElementById("player"))?.value || "east"
@@ -24,6 +43,24 @@ async function update() {
       return `${i + 1}z`
     })
     .replace(/5r/g, "0")
+  const dora = tryCall(() => {
+    document.getElementById("dora")?.setAttribute("aria-invalid", "false")
+    const doraTiles = /** @type {HTMLInputElement | null} */ (document.getElementById("dora"))?.value || ""
+    return parseShortCode(doraTiles)
+  }, (error) => {
+    console.log(error)
+    document.getElementById("dora")?.setAttribute("aria-invalid", "true")
+    return []
+  })
+  const uraDora = tryCall(() => {
+    document.getElementById("uradora")?.setAttribute("aria-invalid", "false")
+    const uraDoraTiles = /** @type {HTMLInputElement | null} */ (document.getElementById("uradora"))?.value || ""
+    return parseShortCode(uraDoraTiles)
+  }, (error) => {
+    console.log(error)
+    document.getElementById("uradora")?.setAttribute("aria-invalid", "true")
+    return []
+  })
   try {
     const hand = parseHandCode(handCode)
     const state = {
@@ -32,6 +69,8 @@ async function update() {
       player,
       lizhi,
       zimo,
+      dora,
+      uraDora,
     }
     const { hu, tingpai } = await new Promise(resolve => {
       setImmediate(() => resolve())

@@ -15,35 +15,42 @@
   <main class="container">
     <nav>
       <ul>
-        <li><h1>麻雀 役・聴牌判定器</h1></li>
+        <li>
+          <h1>麻雀 役・聴牌判定器</h1>
+        </li>
       </ul>
       <ul>
         <li><a href="https://github.com/mandel59/mahjong#readme">README</a></li>
       </ul>
     </nav>
     <div class="grid">
-      <div>
-        <label>場風<select id="wind" aria-controls="output">
-            <option value="east">東</option>
-            <option value="south">南</option>
-            <option value="west">西</option>
-            <option value="north">北</option>
-          </select></label>
-        <label>自風<select id="player" aria-controls="output">
-            <option value="east">東</option>
-            <option value="south">南</option>
-            <option value="west">西</option>
-            <option value="north">北</option>
-          </select></label>
-        <label>リーチ <input id="lizhi" type="checkbox" role="switch" aria-controls="output"></label>
-        <label>ツモ <input id="zimo" type="checkbox" role="switch" aria-controls="output"></label>
-        <label>手牌<input id="hand" type="text" aria-controls="output"></label>
-      </div>
-      <div role="region" id="output" aria-live="polite">
+      <section>
+        <details>
+          <summary>詳細オプション</summary>
+          <label>場風<select id="wind" name="wind" aria-controls="output">
+              <option value="east">東</option>
+              <option value="south">南</option>
+              <option value="west">西</option>
+              <option value="north">北</option>
+            </select></label>
+          <label>自風<select id="player" name="player" aria-controls="output">
+              <option value="east">東</option>
+              <option value="south">南</option>
+              <option value="west">西</option>
+              <option value="north">北</option>
+            </select></label>
+          <label>リーチ <input id="lizhi" name="lizhi" type="checkbox" role="switch" aria-controls="output"></label>
+          <label>ツモ <input id="zimo" name="zimo" type="checkbox" role="switch" aria-controls="output"></label>
+          <label>ドラ牌<input id="dora" name="dora" type="text" aria-controls="output"></label>
+          <label>裏ドラ牌<input id="uradora" name="uradora" type="text" aria-controls="output"></label>
+        </details>
+        <label>手牌<input id="hand" name="hand" type="text" aria-controls="output"></label>
+      </section>
+      <section role="region" id="output" aria-live="polite">
         <label>点数<div id="points"></div></label>
         <label>役<ul id="hu"></ul></label>
         <label>聴牌<ul id="tingpai"></ul></label>
-      </div>
+      </section>
     </div>
   </main>
 </body>
