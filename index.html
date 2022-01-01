@@ -23,23 +23,23 @@
     </nav>
     <div class="grid">
       <div>
-        <label>場風<select id="wind">
+        <label>場風<select id="wind" aria-controls="output">
             <option value="east">東</option>
             <option value="south">南</option>
             <option value="west">西</option>
             <option value="north">北</option>
           </select></label>
-        <label>自風<select id="player">
+        <label>自風<select id="player" aria-controls="output">
             <option value="east">東</option>
             <option value="south">南</option>
             <option value="west">西</option>
             <option value="north">北</option>
           </select></label>
-        <label>立直 <input id="lizhi" type="checkbox" role="switch"></label>
-        <label>ツモ <input id="zimo" type="checkbox" role="switch"></label>
-        <label>手牌<input id="hand" type="text"></label>
+        <label>リーチ <input id="lizhi" type="checkbox" role="switch" aria-controls="output"></label>
+        <label>ツモ <input id="zimo" type="checkbox" role="switch" aria-controls="output"></label>
+        <label>手牌<input id="hand" type="text" aria-controls="output"></label>
       </div>
-      <div>
+      <div role="region" id="output" aria-live="polite">
         <label>点数<div id="points"></div></label>
         <label>役<ul id="hu"></ul></label>
         <label>聴牌<ul id="tingpai"></ul></label>

@@ -1222,6 +1222,10 @@ export function calcBasicPoints(fu, fan, doraFan) {
  * @param {boolean} [returnsOption.tingpai]
  */
 export async function evaluateMahjongState(state, returnsOption = {}) {
+    const nTiles = countTilesInHand(state.hand)
+    if (!(nTiles === 13 || nTiles === 14)) throw new RangeError()
+    if (nTiles === 13 && state.hand.pickedTile != null) throw new RangeError()
+    if (nTiles === 14 && state.hand.pickedTile == null) throw new RangeError()
     const {
         hu: returnHu = true,
         tingpai: returnTingpai = true,
@@ -1260,6 +1264,7 @@ export async function evaluateMahjongState(state, returnsOption = {}) {
     }
     const tingpai = returnTingpai ? calcTingpai() : null
     return {
+        nTiles,
         hu,
         tingpai,
     }
