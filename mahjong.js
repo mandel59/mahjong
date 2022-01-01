@@ -295,7 +295,7 @@ function validateMeldCall(type, tiles, discarder) {
         if (!(suits[0] === "m" || suits[0] === "s" || suits[0] === "p")) throw new RangeError()
         if (!(suits[0] === suits[1] && suits[0] === suits[2])) throw new RangeError()
         if (!(nums[0] + 1 === nums[1] && nums[0] + 2 === nums[2])) throw new RangeError()
-        if (discarder === "self") throw new RangeError()
+        if (discarder !== "top") throw new RangeError()
     } else if (type === "pong") {
         if (tiles.length !== 3) throw new RangeError()
         if (!(tiles[0] === tiles[1] && tiles[0] === tiles[2])) throw new RangeError()
