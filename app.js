@@ -46,21 +46,28 @@ import {
   @property {Tile[]} [uraDora]
 */
 
-function onHashChange() {
+function syncUIStateWithHash() {
   if (location.hash.startsWith("#")) {
     const uiState = urlParamsToState(new URLSearchParams(location.hash.slice(1)))
     setUIState(uiState)
   }
-  update()
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  window.addEventListener("hashchange", onHashChange)
-  // window.addEventListener("popstate", onHashChange)
+  window.addEventListener("hashchange", (ev) => {
+    const currentStateUrl = urlOfUIState(getUIState())
+    if (currentStateUrl !== ev.oldURL) {
+      history.replaceState(null, null, currentStateUrl)
+      history.pushState(null, null, ev.newURL)
+    }
+    syncUIStateWithHash()
+    update()
+  })
   for (const id of ["player", "wind", "dora", "uradora", "hand", "lizhi", "zimo"]) {
     document.getElementById(id)?.addEventListener("input", update)
   }
-  onHashChange()
+  syncUIStateWithHash()
+  update()
 })
 
 /**
