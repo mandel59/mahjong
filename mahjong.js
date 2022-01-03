@@ -1328,10 +1328,14 @@ export async function evaluateMahjongState(state, returnsOption = {}) {
  * @param {Tile[]} tiles
  */
 export function discardTile(s, tiles) {
-    const ss = replaceAkaDora(s)
-    const i = tiles.findIndex((x) => replaceAkaDora(x) === ss)
+    const i = tiles.findIndex((x) => x === s)
     if (i >= 0) {
         return [...tiles.slice(0, i), ...tiles.slice(i + 1)]
+    }
+    const ss = replaceAkaDora(s)
+    const j = tiles.findIndex((x) => replaceAkaDora(x) === ss)
+    if (j >= 0) {
+        return [...tiles.slice(0, j), ...tiles.slice(j + 1)]
     }
     throw new Error()
 }
