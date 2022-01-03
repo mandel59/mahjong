@@ -36,16 +36,11 @@ async function update() {
   const lizhi = /** @type {HTMLInputElement | null} */ (document.getElementById("lizhi"))?.checked
   const zimo = /** @type {HTMLInputElement | null} */ (document.getElementById("zimo"))?.checked
   const handTiles = /** @type {HTMLInputElement | null} */ (document.getElementById("hand"))?.value || ""
-  const handCode = handTiles
-    .replace(/\s/g, "")
-    .replace(/[東南西北白發中]/g, (c) => {
-      const i = "東南西北白發中".indexOf(c)
-      return `${i + 1}z`
-    })
-    .replace(/5r/g, "0")
+  const handCode = handTiles.replace(/^\s+|\s+$/g, "")
   const dora = tryCall(() => {
     document.getElementById("dora")?.setAttribute("aria-invalid", "false")
-    const doraTiles = /** @type {HTMLInputElement | null} */ (document.getElementById("dora"))?.value || ""
+    const doraTiles = /** @type {HTMLInputElement | null} */ (
+      document.getElementById("dora"))?.value?.replace(/^\s+|\s+$/g, "") || ""
     return parseShortCode(doraTiles)
   }, (error) => {
     console.log(error)
@@ -54,7 +49,8 @@ async function update() {
   })
   const uraDora = tryCall(() => {
     document.getElementById("uradora")?.setAttribute("aria-invalid", "false")
-    const uraDoraTiles = /** @type {HTMLInputElement | null} */ (document.getElementById("uradora"))?.value || ""
+    const uraDoraTiles = /** @type {HTMLInputElement | null} */ (
+      document.getElementById("uradora"))?.value?.replace(/^\s+|\s+$/g, "") || ""
     return parseShortCode(uraDoraTiles)
   }, (error) => {
     console.log(error)

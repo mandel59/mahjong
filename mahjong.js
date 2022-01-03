@@ -71,6 +71,21 @@ export function tileCodeToUnicode(x) {
     throw new RangeError()
 }
 
+/**
+ * @param {string} s 
+ * @returns 
+ */
+export function preprocessCode(s) {
+    return s
+        // 字牌
+        .replace(/[東南西北白發中]/g, (c) => {
+            const i = "東南西北白發中".indexOf(c)
+            return `${i + 1}z`
+        })
+        // 赤ドラ
+        .replace(/5r/g, "0")
+}
+
 export function parseUnicode(s) {
     return Array.from(s, (c) => unicodeToTileCode(c))
 }
@@ -101,6 +116,7 @@ export function parseTileCode(s) {
  * @returns {Tile[]}
  */
 export function parseShortCode(s) {
+    s = preprocessCode(s)
     const re = /[0-9]+[mps]|[1-7]+z|[1-8]+h/y
     const a = []
     while (re.lastIndex !== s.length) {
@@ -155,6 +171,7 @@ export function parseMeldCallCode(s) {
  * @returns {Hand}
  */
 export function parseHandCode(s) {
+    s = preprocessCode(s)
     const re = /[^\[\]]+|\[[^\[\]]+\]/y
     /** @type {Hand} */
     const hand = {
