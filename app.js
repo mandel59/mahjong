@@ -5,9 +5,25 @@ import {
   parseShortCode,
 } from "./mahjong.js"
 
+/**
+@typedef {("east"|"south"|"west"|"north")} Wind
+@typedef UIState
+  @property {Wind} player
+  @property {Wind} wind
+  @property {boolean} lizhi
+  @property {boolean} zimo
+  @property {string} hand
+  @property {string} dora
+  @property {string} uradora
+*/
+
 window.addEventListener("DOMContentLoaded", () => {
   for (const id of ["player", "wind", "dora", "uradora", "hand", "lizhi", "zimo"]) {
     document.getElementById(id)?.addEventListener("input", () => update())
+  }
+  if (location.hash.startsWith("#")) {
+    const uiState = urlParamsToState(new URLSearchParams(location.hash.slice(1)))
+    setUIState(uiState)
   }
   update()
 })
@@ -31,16 +47,22 @@ function tryCall(callback, expect) {
 }
 
 async function update() {
-  const player = /** @type {HTMLSelectElement | null} */ (document.getElementById("player"))?.value || "east"
-  const wind = /** @type {HTMLSelectElement | null} */ (document.getElementById("wind"))?.value || "east"
-  const lizhi = /** @type {HTMLInputElement | null} */ (document.getElementById("lizhi"))?.checked
-  const zimo = /** @type {HTMLInputElement | null} */ (document.getElementById("zimo"))?.checked
-  const handTiles = /** @type {HTMLInputElement | null} */ (document.getElementById("hand"))?.value || ""
-  const handCode = handTiles.replace(/^\s+|\s+$/g, "")
+  const uiState = getUIState()
+  const {
+    player,
+    wind,
+    lizhi,
+    zimo,
+    hand: handCode,
+    dora: doraTiles,
+    uradora: uraDoraTiles,
+  } = uiState
+  const permanentlink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("permanentlink"))
+  if (permanentlink) {
+    permanentlink.href = "#" + stateToUrlParams(uiState).toString()
+  }
   const dora = tryCall(() => {
     document.getElementById("dora")?.setAttribute("aria-invalid", "false")
-    const doraTiles = /** @type {HTMLInputElement | null} */ (
-      document.getElementById("dora"))?.value?.replace(/^\s+|\s+$/g, "") || ""
     return parseShortCode(doraTiles)
   }, (error) => {
     console.log(error)
@@ -49,8 +71,6 @@ async function update() {
   })
   const uraDora = tryCall(() => {
     document.getElementById("uradora")?.setAttribute("aria-invalid", "false")
-    const uraDoraTiles = /** @type {HTMLInputElement | null} */ (
-      document.getElementById("uradora"))?.value?.replace(/^\s+|\s+$/g, "") || ""
     return parseShortCode(uraDoraTiles)
   }, (error) => {
     console.log(error)
@@ -153,4 +173,93 @@ async function update() {
     return
   }
   document.getElementById("hand")?.setAttribute("aria-invalid", "false")
+}
+
+/**
+ * @returns {UIState}
+ */
+function getUIState() {
+  const player = /** @type {HTMLSelectElement | null} */ (document.getElementById("player"))?.value || "east"
+  const wind = /** @type {HTMLSelectElement | null} */ (document.getElementById("wind"))?.value || "east"
+  const lizhi = /** @type {HTMLInputElement | null} */ (document.getElementById("lizhi"))?.checked || false
+  const zimo = /** @type {HTMLInputElement | null} */ (document.getElementById("zimo"))?.checked || false
+  const hand = /** @type {HTMLInputElement | null} */ (document.getElementById("hand"))?.value || ""
+  const dora = /** @type {HTMLInputElement | null} */ (document.getElementById("dora"))?.value || ""
+  const uradora = /** @type {HTMLInputElement | null} */ (document.getElementById("uradora"))?.value || ""
+  return {
+    player,
+    wind,
+    lizhi,
+    zimo,
+    hand,
+    dora,
+    uradora,
+  }
+}
+
+/**
+ * @param {UIState} state 
+ */
+function setUIState(state) {
+  const player = /** @type {HTMLSelectElement | null} */ (document.getElementById("player"))
+  if (player) player.value = state.player
+  const wind = /** @type {HTMLSelectElement | null} */ (document.getElementById("wind"))
+  if (wind) wind.value = state.wind
+  const lizhi = /** @type {HTMLInputElement | null} */ (document.getElementById("lizhi"))
+  if (lizhi) lizhi.checked = state.lizhi
+  const zimo = /** @type {HTMLInputElement | null} */ (document.getElementById("zimo"))
+  if (zimo) zimo.checked = state.zimo
+  const hand = /** @type {HTMLInputElement | null} */ (document.getElementById("hand"))
+  if (hand) hand.value = state.hand
+  const dora = /** @type {HTMLInputElement | null} */ (document.getElementById("dora"))
+  if (dora) dora.value = state.dora
+  const uradora = /** @type {HTMLInputElement | null} */ (document.getElementById("uradora"))
+  if (uradora) uradora.value = state.uradora
+}
+
+/**
+ * @param {UIState} state
+ */
+function stateToUrlParams(state) {
+  const keys = ["hand", "player", "wind", "lizhi", "zimo", "dora", "uradora"]
+  return new URLSearchParams(
+    keys
+      .map(k => {
+        if (typeof state[k] === "boolean") {
+          return [k, state[k] ? "✓" : ""]
+        }
+        return [k, String(state[k])]
+      })
+      .filter(([k, v]) => v)
+  )
+}
+
+/** @type {Wind[]} */
+const windValues = ["east", "south", "west", "north"]
+
+/**
+ * @param {URLSearchParams} param
+ * @returns {UIState}
+ */
+function urlParamsToState(param) {
+  /** @type {Wind} */
+  let player = param.get("player")
+  if (!windValues.includes(player)) player = "east"
+  /** @type {Wind} */
+  let wind = param.get("wind") || "east"
+  if (!windValues.includes(wind)) wind = "east"
+  const lizhi = Boolean(param.get("lizhi"))
+  const zimo = Boolean(param.get("zimo"))
+  const hand = param.get("hand") || ""
+  const dora = param.get("dora") || ""
+  const uradora = param.get("uradora") || ""
+  return {
+    player,
+    wind,
+    lizhi,
+    zimo,
+    hand,
+    dora,
+    uradora,
+  }
 }
