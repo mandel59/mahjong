@@ -56,7 +56,7 @@ function syncUIStateWithHash() {
 window.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("hashchange", (ev) => {
     const currentStateUrl = urlOfUIState(getUIState())
-    if (currentStateUrl !== ev.oldURL) {
+    if (currentStateUrl !== ev.oldURL && currentStateUrl !== ev.newURL) {
       history.replaceState(null, null, currentStateUrl)
       history.pushState(null, null, ev.newURL)
     }
