@@ -102,10 +102,7 @@ function urlOfUIState(uiState) {
  */
 function updateLinks(state) {
   const thisUrl = urlOfUIState(state)
-  const permanentlink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("permanentlink"))
-  if (permanentlink) {
-    permanentlink.href = thisUrl
-  }
+  history.replaceState(null, null, thisUrl)
   const tweetlink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("tweetlink"))
   if (tweetlink) {
     const tweet = new URL("https://twitter.com/intent/tweet")
