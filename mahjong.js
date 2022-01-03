@@ -197,6 +197,34 @@ export function parseHandCode(s) {
 }
 
 /**
+ * @param {MeldCall} meldCall
+ * @returns {string}
+ */
+export function meldCallToString(meldCall) {
+    const tiles = [...meldCall.tiles]
+    const di = tiles.indexOf(meldCall.discarded)
+    const shominkan = meldCall.shominkan ? "+" : ""
+    return `[${meldCall.tiles.map((t, i) => {
+        if (i === di) {
+            if (meldCall.discarder === "top") return `<${shominkan}${tileNum(t)}`
+            if (meldCall.discarder === "opponent") return `^${shominkan}${tileNum(t)}`
+            if (meldCall.discarder === "bottom") return `>${shominkan}${tileNum(t)}`
+        }
+        return tileNum(t)
+    }).join("")}${tileSuit(meldCall.smallest)}]`
+}
+
+/**
+ * @param {Hand} hand
+ * @returns {string}
+ */
+export function handToString(hand) {
+    return `${shortCode(hand.handTiles)
+        }${hand.meldCalls.map(meldCallToString).join("")
+        }${hand.pickedTile ?? ""}`
+}
+
+/**
  * @param {Tile[]} tiles
  * @returns {Tile[]}
  */

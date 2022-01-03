@@ -3,7 +3,28 @@ import {
   evaluateMahjongState,
   discardTile,
   parseShortCode,
+  handToString,
 } from "./mahjong.js"
+
+/**
+ * Mahjong Tile Code
+ * @typedef {(`${Digit}m`)} WanziTile 萬子 (Characters; ja: manzu)
+ * 0m stands for Aka Dora of 5-character
+ * @typedef {(`${Digit}p`)} BingziTile 筒子 (Dots; ja: pinzu)
+ * 0p stands for Aka Dora of 5-dots
+ * @typedef {(`${Digit}s`)} SuoziTile 索子 (Bamboo; ja: sо̄zu)
+ * 0s stands for Aka Dora of 5-bamboo
+ * @typedef {(`${"1"|"2"|"3"|"4"}z`)} WindTile 風牌
+ * 1z: 東 2z: 南 3z: 西 4z: 北
+ * @typedef {(`${"5"|"6"|"7"}z`)} DragonTile 三元牌
+ * 5z: 白 6z: 發 7z: 中
+ * deferring to Japanese Mahjong order
+ * @typedef {(`${"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"}h`)} BonusTile 花牌
+ * 1h: 梅 2h: 蘭 3h: 菊 4h: 竹 5h: 春 6h: 夏 7h: 秋 8h: 冬
+ * usually not used in Japanese Mahjong
+ */
+
+/** @typedef {(WanziTile|BingziTile|SuoziTile|WindTile|DragonTile|BonusTile)} Tile */
 
 /**
 @typedef {("east"|"south"|"west"|"north")} Wind
@@ -15,17 +36,31 @@ import {
   @property {string} hand
   @property {string} dora
   @property {string} uradora
+@typedef MahjongState
+  @property {Hand} hand
+  @property {Wind} wind
+  @property {Wind} player
+  @property {boolean} lizhi
+  @property {boolean} zimo
+  @property {Tile[]} [dora]
+  @property {Tile[]} [uraDora]
 */
 
-window.addEventListener("DOMContentLoaded", () => {
-  for (const id of ["player", "wind", "dora", "uradora", "hand", "lizhi", "zimo"]) {
-    document.getElementById(id)?.addEventListener("input", () => update())
-  }
+function onHashChange() {
   if (location.hash.startsWith("#")) {
     const uiState = urlParamsToState(new URLSearchParams(location.hash.slice(1)))
     setUIState(uiState)
   }
   update()
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  window.addEventListener("hashchange", onHashChange)
+  // window.addEventListener("popstate", onHashChange)
+  for (const id of ["player", "wind", "dora", "uradora", "hand", "lizhi", "zimo"]) {
+    document.getElementById(id)?.addEventListener("input", update)
+  }
+  onHashChange()
 })
 
 /**
@@ -46,48 +81,73 @@ function tryCall(callback, expect) {
   }
 }
 
-async function update() {
-  const uiState = getUIState()
-  const {
-    player,
-    wind,
-    lizhi,
-    zimo,
-    hand: handCode,
-    dora: doraTiles,
-    uradora: uraDoraTiles,
-  } = uiState
+/**
+ * @param {UIState} uiState 
+ */
+function urlOfUIState(uiState) {
+  const thisUrl = new URL(location.href)
+  thisUrl.hash = "#" + stateToUrlParams(uiState).toString()
+  return thisUrl.href
+}
+
+/**
+ * @param {UIState} state 
+ */
+function updateLinks(state) {
+  const thisUrl = urlOfUIState(state)
   const permanentlink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("permanentlink"))
   if (permanentlink) {
-    permanentlink.href = "#" + stateToUrlParams(uiState).toString()
+    permanentlink.href = thisUrl
   }
-  const dora = tryCall(() => {
-    document.getElementById("dora")?.setAttribute("aria-invalid", "false")
-    return parseShortCode(doraTiles)
-  }, (error) => {
-    console.log(error)
-    document.getElementById("dora")?.setAttribute("aria-invalid", "true")
-    return []
-  })
-  const uraDora = tryCall(() => {
-    document.getElementById("uradora")?.setAttribute("aria-invalid", "false")
-    return parseShortCode(uraDoraTiles)
-  }, (error) => {
-    console.log(error)
-    document.getElementById("uradora")?.setAttribute("aria-invalid", "true")
-    return []
-  })
-  try {
-    const hand = parseHandCode(handCode)
-    const state = {
-      hand,
-      wind,
-      player,
-      lizhi,
-      zimo,
-      dora,
-      uraDora,
+  const tweetlink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("tweetlink"))
+  if (tweetlink) {
+    const tweet = new URL("https://twitter.com/intent/tweet")
+    tweet.searchParams.set("url", thisUrl)
+    tweetlink.href = tweet.href
+  }
+}
+
+/**
+ * @param {UIState} uiState
+ * @returns {MahjongState}
+ */
+function uiStateToMahjongState(uiState) {
+  document.getElementById("dora")?.setAttribute("aria-invalid", "false")
+  document.getElementById("uradora")?.setAttribute("aria-invalid", "false")
+  document.getElementById("hand")?.setAttribute("aria-invalid", "false")
+  const { player, wind, lizhi, zimo, hand: handCode, dora: doraTiles, uradora: uraDoraTiles } = uiState
+  updateLinks(uiState)
+  const dora = tryCall(
+    () => parseShortCode(doraTiles),
+    (error) => {
+      console.log(error)
+      document.getElementById("dora")?.setAttribute("aria-invalid", "true")
+      return []
+    })
+  const uraDora = tryCall(
+    () => parseShortCode(uraDoraTiles),
+    (error) => {
+      console.log(error)
+      document.getElementById("uradora")?.setAttribute("aria-invalid", "true")
+      return []
+    })
+  const hand = tryCall(
+    () => parseHandCode(handCode),
+    (error) => {
+      console.log(error)
+      document.getElementById("hand")?.setAttribute("aria-invalid", "true")
+      return parseHandCode("")
     }
+  )
+  return { hand, wind, player, lizhi, zimo, dora, uraDora }
+}
+
+async function update() {
+  const uiState = getUIState()
+  updateLinks(uiState)
+  const state = uiStateToMahjongState(uiState)
+  const { hand } = state
+  try {
     const { hu, tingpai } = await new Promise(resolve => {
       setImmediate(() => resolve())
     }).then(() => evaluateMahjongState(state))
@@ -146,14 +206,18 @@ async function update() {
         ...state,
         hand: hand2,
       }
-      const li = document.createElement("li")
+      const anchor = document.createElement("a")
+      anchor.href = urlOfUIState({
+        ...uiState,
+        hand: handToString(hand2)
+      })
       const t0 = document.createTextNode(
         s == null ? `${t} [基本点 ` : `${s} → ${t} [基本点 `
       )
       const t1 = document.createTextNode("***")
       const t2 = document.createTextNode("点]")
       for (const t of [t0, t1, t2]) {
-        li.appendChild(t)
+        anchor.appendChild(t)
       }
       // detach the promise
       new Promise(resolve => {
@@ -165,6 +229,8 @@ async function update() {
         .catch(error => {
           console.log(error)
         })
+      const li = document.createElement("li")
+      li.appendChild(anchor)
       tingpaiList.appendChild(li)
     }
   } catch (error) {
@@ -172,7 +238,6 @@ async function update() {
     document.getElementById("hand")?.setAttribute("aria-invalid", "true")
     return
   }
-  document.getElementById("hand")?.setAttribute("aria-invalid", "false")
 }
 
 /**
