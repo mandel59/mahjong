@@ -998,6 +998,7 @@ export function countTilesInHand(hand) {
  * @property {number} [hu]
  * @property {number} [fan]
  * @property {number} basicPoints
+ * @property {string} limitName
  */
 export function winningHand(melds, state) {
     const { hand, wind, player, lizhi, zimo, dora = [], uraDora = [] } = state
@@ -1234,12 +1235,14 @@ export function winningHand(melds, state) {
     if (yakuman.length > 0) {
         const bai = yakuman.map(([_, bai]) => bai).reduce((x, y) => x + y, 0)
         const basicPoints = 8000 * bai
-        return { yakuman, bai, basicPoints }
+        const limitName = calcYakumanLimitName(bai)
+        return { yakuman, bai, basicPoints, limitName }
     } else {
         const fu = calculateFu()
         const fan = yaku.map(([_, f]) => f).reduce((x, y) => x + y, 0)
         const doraFan = countDora + countAkaDora + countNukiDora
         const basicPoints = calcBasicPoints(fu, fan, doraFan)
+        const limitName = calcLimitName(fu, fan, doraFan)
         return {
             yaku,
             dora: countDora,
@@ -1248,7 +1251,8 @@ export function winningHand(melds, state) {
             uraDora: countUraDora,
             fu,
             fan: fan + doraFan,
-            basicPoints
+            basicPoints,
+            limitName,
         }
     }
 }
@@ -1267,6 +1271,37 @@ export function calcBasicPoints(fu, fan, doraFan) {
     if (fan >= 8) return 4000
     if (fan >= 6) return 3000
     return Math.min(fu * 2 ** (2 + fan), 2000)
+}
+
+/**
+ * @param {number} fu
+ * @param {number} fan
+ * @param {number} doraFan
+ */
+export function calcLimitName(fu, fan, doraFan) {
+    if (fan === 0) return ""
+    fan += doraFan
+    if (fan >= 13) return "数え役満"
+    if (fan >= 11) return "三倍満"
+    if (fan >= 8) return "倍満"
+    if (fan >= 6) return "跳満"
+    if (fu * 2 ** (2 + fan) >= 2000) return "満貫"
+    return ""
+}
+
+/**
+ * @param {number} bai
+ */
+export function calcYakumanLimitName(bai) {
+    return [
+        "役満",
+        "二倍役満",
+        "三倍役満",
+        "四倍役満",
+        "五倍役満",
+        "六倍役満",
+        "七倍役満"
+    ][bai - 1]
 }
 
 /**
