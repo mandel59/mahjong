@@ -237,6 +237,7 @@ export function lipai(tiles) {
  * @returns {string}
  */
 export function shortCode(tiles) {
+    tiles = lipai(tiles)
     const m = tiles.map(x => x[1] === "m" ? x[0] : "").join("")
     const p = tiles.map(x => x[1] === "p" ? x[0] : "").join("")
     const s = tiles.map(x => x[1] === "s" ? x[0] : "").join("")
