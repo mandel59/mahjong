@@ -1164,7 +1164,7 @@ export function winningHand(melds, state) {
         && isYaochu(eyes)
     defineYaku("混全帯么九", isChanta && someIsHonor && !everyIsYaochu, 2, 1)
     defineYaku("純全帯么九", isChanta && !someIsHonor && !everyIsYaochu, 3, 2)
-    defineYaku("三暗刻", closedPong.filter(t => t !== pickedTile).length + closedKong.length === 3, 2, 2)
+    defineYaku("三暗刻", closedPong.filter(t => zimo || t !== pickedTile).length + closedKong.length === 3, 2, 2)
     defineYaku("小三元", eyes != null && isDragonTile(eyes) && pong.filter(isDragonTile).length === 2, 2, 2)
     defineYaku("三槓子", closedKong.length + openKong.length === 3, 2, 2)
 
