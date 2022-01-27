@@ -1088,7 +1088,7 @@ export function winningHand(melds, state) {
     const chitoitsuForm = melds.pr.length === 7
 
     // limit hands
-    const 四暗刻 = closedPong.filter(t => t !== pickedTile).length + closedKong.length === 4
+    const 四暗刻 = closedPong.filter(t => zimo || t !== pickedTile).length + closedKong.length === 4
     const 四暗刻単騎待ち = 四暗刻 && pickedTile === eyes
     defineYakuman("四暗刻単騎待ち", 四暗刻 && 四暗刻単騎待ち, 2)
     defineYakuman("四暗刻", 四暗刻 && !四暗刻単騎待ち)
