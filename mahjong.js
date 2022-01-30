@@ -927,7 +927,20 @@ export function* tingpaiTiles(melds, hand) {
             return
         }
     } else if (uniqueYaochu === 12) {
-        const s = Array.from(countEachTiles(sg).entries()).find(e => e[1] === 3)?.[0]
+        const ct = Array.from(countEachTiles(sg).entries())
+        if (ct.some(e => e[1] === 2)) {
+            const ss = ct.filter(e => e[1] === 2).map(x => x[0])
+            for (const t of yaochuTiles) {
+                if (sg.includes(t)) {
+                    continue
+                }
+                for (const s of ss) {
+                    yield [s, t]
+                }
+            }
+            return
+        }
+        const s = ct.find(e => e[1] === 3)?.[0]
             ?? sg.find(t => !isYaochu(t))
             ?? null
         for (const t of yaochuTiles) {
