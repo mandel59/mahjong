@@ -1015,7 +1015,6 @@ export function countTilesInHand(hand) {
  */
 export function winningHand(melds, state) {
     const { hand, wind, player, lizhi, zimo, dora = [], uraDora = [] } = state
-    const isClosed = hand.handTiles.length === 13
 
     /** @type {[name: string, bai: number][]} */
     const yakuman = []
@@ -1089,6 +1088,7 @@ export function winningHand(melds, state) {
     const chowTiles = new Set(chow)
     const pongTiles = new Set(pong)
     const eyes = melds.pr.length === 1 ? melds.pr[0] : null
+    const isClosed = openChow.length + openPong.length + openKong.length === 0
     /** @type {Set<Tile>} */
     const fanpai = new Set(["5z", "6z", "7z", tileOfWind(wind), tileOfWind(player)])
 
